@@ -19,9 +19,9 @@ const rbac = require('./middleware/rbac');
 
 const app = express();
 
-// CORS configuration
+// CORS configuration - use environment variable with fallback
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -139,7 +139,7 @@ app.post('/api/auth/login', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: user.id, role: user.role?.name },
-      process.env.JWT_SECRET || 'your_jwt_secret_key_here',
+      process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
 
