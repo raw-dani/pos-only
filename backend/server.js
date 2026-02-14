@@ -13,6 +13,10 @@ const User = require('./models/User');
 const Role = require('./models/Role');
 const PaymentMethod = require('./models/PaymentMethod');
 
+// Import middleware
+const auth = require('./middleware/auth');
+const rbac = require('./middleware/rbac');
+
 const app = express();
 
 // CORS configuration
@@ -154,8 +158,8 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Categories routes
-app.get('/api/categories', async (req, res) => {
+// Categories routes - Protected with RBAC
+app.get('/api/categories', auth, rbac.requirePermission('categories:read'), async (req, res) => {
   console.log('DEBUG - Get categories called');
   try {
     const categories = await Category.findAll({ order: [['name', 'ASC']] });
@@ -166,7 +170,7 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-app.post('/api/categories', async (req, res) => {
+app.post('/api/categories', auth, rbac.requirePermission('categories:create'), async (req, res) => {
   console.log('DEBUG - Create category called with:', req.body);
   try {
     const category = await Category.create(req.body);
@@ -178,7 +182,7 @@ app.post('/api/categories', async (req, res) => {
   }
 });
 
-app.put('/api/categories/:id', async (req, res) => {
+app.put('/api/categories/:id', auth, rbac.requirePermission('categories:update'), async (req, res) => {
   console.log('DEBUG - Update category called for id:', req.params.id);
   try {
     const category = await Category.findByPk(req.params.id);
@@ -194,7 +198,7 @@ app.put('/api/categories/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/categories/:id', async (req, res) => {
+app.delete('/api/categories/:id', auth, rbac.requirePermission('categories:delete'), async (req, res) => {
   console.log('DEBUG - Delete category called for id:', req.params.id);
   try {
     const category = await Category.findByPk(req.params.id);
@@ -210,8 +214,8 @@ app.delete('/api/categories/:id', async (req, res) => {
   }
 });
 
-// Products routes
-app.get('/api/products', async (req, res) => {
+// Products routes - Protected with RBAC
+app.get('/api/products', auth, rbac.requirePermission('products:read'), async (req, res) => {
   console.log('DEBUG - Get products called');
   try {
     const products = await Product.findAll({ 
@@ -227,7 +231,7 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', auth, rbac.requirePermission('products:create'), async (req, res) => {
   console.log('DEBUG - Create product called with:', req.body);
   try {
     const product = await Product.create({
@@ -242,7 +246,7 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', auth, rbac.requirePermission('products:update'), async (req, res) => {
   console.log('DEBUG - Update product called for id:', req.params.id);
   try {
     const product = await Product.findByPk(req.params.id);
@@ -258,7 +262,7 @@ app.put('/api/products/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', auth, rbac.requirePermission('products:delete'), async (req, res) => {
   console.log('DEBUG - Delete product called for id:', req.params.id);
   try {
     const product = await Product.findByPk(req.params.id);
@@ -275,8 +279,8 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-// Invoices routes
-app.post('/api/invoices', async (req, res) => {
+// Invoices routes - Protected with RBAC
+app.post('/api/invoices', auth, rbac.requirePermission('invoices:create'), async (req, res) => {
   console.log('DEBUG - Create invoice called with:', req.body);
   try {
     const { items, cashierId, subtotal, discount = 0, tax = 0, total, paymentMethodId, paymentAmount } = req.body;
@@ -327,8 +331,8 @@ app.post('/api/invoices', async (req, res) => {
   }
 });
 
-// Get all invoices
-app.get('/api/invoices', async (req, res) => {
+// Get all invoices - Protected with RBAC
+app.get('/api/invoices', auth, rbac.requirePermission('invoices:read'), async (req, res) => {
   console.log('DEBUG - Get invoices called');
   try {
     const invoices = await Invoice.findAll({
@@ -346,8 +350,8 @@ app.get('/api/invoices', async (req, res) => {
   }
 });
 
-// Confirm payment route
-app.put('/api/invoices/:id/pay', async (req, res) => {
+// Confirm payment route - Protected with RBAC
+app.put('/api/invoices/:id/pay', auth, rbac.requirePermission('invoices:update'), async (req, res) => {
   console.log('DEBUG - Confirm payment for invoice:', req.params.id);
   try {
     const invoice = await Invoice.findByPk(req.params.id);
@@ -377,8 +381,8 @@ app.put('/api/invoices/:id/pay', async (req, res) => {
   }
 });
 
-// Reports routes
-app.get('/api/reports/sales', async (req, res) => {
+// Reports routes - Protected with RBAC
+app.get('/api/reports/sales', auth, rbac.requirePermission('reports:read'), async (req, res) => {
   console.log('DEBUG - Get sales reports called with params:', req.query);
   try {
     const { startDate, endDate, cashierId } = req.query;
@@ -421,7 +425,7 @@ app.get('/api/reports/sales', async (req, res) => {
   }
 });
 
-app.get('/api/reports/sales/pdf', async (req, res) => {
+app.get('/api/reports/sales/pdf', auth, rbac.requirePermission('reports:export'), async (req, res) => {
   console.log('DEBUG - Export sales PDF called with params:', req.query);
   try {
     const PDFDocument = require('pdfkit');
@@ -477,8 +481,8 @@ app.get('/api/reports/sales/pdf', async (req, res) => {
   }
 });
 
-// Payment methods routes
-app.get('/api/payment-methods', async (req, res) => {
+// Payment methods routes - Protected with RBAC
+app.get('/api/payment-methods', auth, rbac.requirePermission('payment-methods:read'), async (req, res) => {
   try {
     const methods = await PaymentMethod.findAll();
     res.json(methods);
