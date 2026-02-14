@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "POS Invoice",
+  "name": "POS Invoice System",
+  "description": "Point of Sale Invoice System - Manage products, invoices, and sales reports",
   "icons": [
     {
       "src": "favicon.ico",
@@ -18,8 +19,14 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#2D8CFF",
+  "background_color": "#F5F9FF",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "lang": "id-ID",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
 }
