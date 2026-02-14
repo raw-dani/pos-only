@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../utils/api';
+import { getUserRole, isAdmin, isManager } from '../utils/auth';
 
 const POS = () => {
   const [products, setProducts] = useState([]);
@@ -436,23 +437,27 @@ const POS = () => {
           POS Invoice System
         </h1>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={() => window.location.href = '/products'}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#10B981',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#10B981'}
-          >
-            📦 Manage Products
-          </button>
+          {/* Show Manage Products button only for Admin and Manager */}
+          {(isAdmin() || isManager()) && (
+            <button
+              onClick={() => window.location.href = '/products'}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#10B981',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#10B981'}
+            >
+              📦 Manage Products
+            </button>
+          )}
+          {/* Show Reports button for all authenticated users */}
           <button
             onClick={() => window.location.href = '/reports'}
             style={{
@@ -470,6 +475,18 @@ const POS = () => {
           >
             📊 Reports
           </button>
+          {/* User info and role */}
+          <span style={{
+            padding: '8px 16px',
+            backgroundColor: '#E5E7EB',
+            color: '#374151',
+            borderRadius: '6px',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            👤 {getUserRole()}
+          </span>
           <button
             onClick={logout}
             style={{
