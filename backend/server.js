@@ -1,19 +1,17 @@
-// Temporary in-memory storage for demo
-let products = [];
-let categories = [
-  { id: 1, name: 'Food & Beverage' },
-  { id: 2, name: 'Electronics' },
-  { id: 3, name: 'Clothing' },
-  { id: 4, name: 'Others' }
-];
-let productIdCounter = 1;
-let categoryIdCounter = 5;
-
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
+
+// Import database config and models
+const sequelize = require('./config/database');
+const Category = require('./models/Category');
+const Product = require('./models/Product');
+const { Invoice, InvoiceItem, Payment } = require('./models/Invoice');
+const User = require('./models/User');
+const Role = require('./models/Role');
+const PaymentMethod = require('./models/PaymentMethod');
 
 const app = express();
 
@@ -26,26 +24,130 @@ app.use(cors({
 }));
 
 // Middleware
-app.use(express.json({ limit: '10mb' })); // Increase limit for base64 images
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Simple login route for testing
+// Initialize database and sync models
+const initDatabase = async () => {
+  try {
+    // Test database connection
+    await sequelize.authenticate();
+    console.log('Database connection established successfully.');
+    
+    // Sync all models (creates tables if they don't exist)
+    await sequelize.sync({ alter: true });
+    console.log('All models synchronized with database.');
+    
+    // Check if we need to seed initial data
+    const roleCount = await Role.count();
+    if (roleCount === 0) {
+      console.log('Seeding initial data...');
+      await seedInitialData();
+    }
+  } catch (error) {
+    console.error('Unable to connect to database:', error);
+    // Continue anyway for development - will use in-memory fallback
+  }
+};
+
+// Seed initial data
+const seedInitialData = async () => {
+  try {
+    // Create roles
+    const roles = await Role.bulkCreate([
+      { name: 'Admin' },
+      { name: 'Cashier' }
+    ]);
+    
+    // Create admin user with hashed password
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    await User.create({
+      username: 'admin',
+      password: hashedPassword,
+      name: 'Administrator',
+      email: 'admin@pos.com',
+      roleId: roles[0].id,
+      isActive: true
+    });
+    
+    // Create cashier user
+    await User.create({
+      username: 'kasir',
+      password: await bcrypt.hash('kasir123', 10),
+      name: 'Kasir',
+      email: 'kasir@pos.com',
+      roleId: roles[1].id,
+      isActive: true
+    });
+    
+    // Create categories
+    const categories = await Category.bulkCreate([
+      { name: 'Food & Beverage', description: 'Food and drinks items' },
+      { name: 'Electronics', description: 'Electronic devices and accessories' },
+      { name: 'Clothing', description: 'Apparel and fashion items' },
+      { name: 'Others', description: 'Miscellaneous items' }
+    ]);
+    
+    // Create sample products
+    await Product.bulkCreate([
+      { name: 'Nasi Goreng', categoryId: categories[0].id, price: 25000, description: 'Fried rice with egg', isActive: true },
+      { name: 'Mie Goreng', categoryId: categories[0].id, price: 20000, description: 'Fried noodles', isActive: true },
+      { name: 'Es Teh', categoryId: categories[0].id, price: 5000, description: 'Iced tea', isActive: true },
+      { name: 'Ayam Bakar', categoryId: categories[0].id, price: 35000, description: 'Grilled chicken', isActive: true }
+    ]);
+    
+    // Create payment methods
+    await PaymentMethod.bulkCreate([
+      { name: 'Cash', type: 'cash' },
+      { name: 'Debit Card', type: 'transfer' },
+      { name: 'Credit Card', type: 'transfer' },
+      { name: 'E-Wallet', type: 'qris' }
+    ]);
+    
+    console.log('Initial data seeded successfully!');
+  } catch (error) {
+    console.error('Error seeding initial data:', error);
+  }
+};
+
+// Login route with database authentication
 app.post('/api/auth/login', async (req, res) => {
-  console.log('DEBUG - Simple login called');
+  console.log('DEBUG - Login called');
   try {
     const { username, password } = req.body;
 
-    // Simple hardcoded check for testing
-    if (username === 'admin' && password === 'admin123') {
-      const token = jwt.sign({ id: 1 }, 'test-secret-key', { expiresIn: '8h' });
-      console.log('DEBUG - Generated token:', token);
-      res.json({
-        token,
-        user: { id: 1, name: 'Admin', role: 'Admin' }
-      });
-    } else {
-      res.status(401).json({ error: 'Invalid credentials' });
+    // Find user in database
+    const user = await User.findOne({ 
+      where: { username, isActive: true },
+      include: [{ model: Role, as: 'role' }]
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, role: user.role?.name },
+      process.env.JWT_SECRET || 'your_jwt_secret_key_here',
+      { expiresIn: '8h' }
+    );
+
+    console.log('DEBUG - Generated token for user:', user.username);
+    res.json({
+      token,
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        role: user.role?.name 
+      }
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: error.message });
@@ -56,6 +158,7 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/categories', async (req, res) => {
   console.log('DEBUG - Get categories called');
   try {
+    const categories = await Category.findAll({ order: [['name', 'ASC']] });
     res.json(categories);
   } catch (error) {
     console.error('Get categories error:', error);
@@ -66,13 +169,7 @@ app.get('/api/categories', async (req, res) => {
 app.post('/api/categories', async (req, res) => {
   console.log('DEBUG - Create category called with:', req.body);
   try {
-    const category = {
-      id: categoryIdCounter++,
-      ...req.body,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    categories.push(category);
+    const category = await Category.create(req.body);
     console.log('DEBUG - Created category:', category);
     res.status(201).json(category);
   } catch (error) {
@@ -82,19 +179,15 @@ app.post('/api/categories', async (req, res) => {
 });
 
 app.put('/api/categories/:id', async (req, res) => {
-  console.log('DEBUG - Update category called for id:', req.params.id, 'with:', req.body);
+  console.log('DEBUG - Update category called for id:', req.params.id);
   try {
-    const categoryIndex = categories.findIndex(cat => cat.id === parseInt(req.params.id));
-    if (categoryIndex === -1) {
+    const category = await Category.findByPk(req.params.id);
+    if (!category) {
       return res.status(404).json({ error: 'Category not found' });
     }
-    categories[categoryIndex] = {
-      ...categories[categoryIndex],
-      ...req.body,
-      updatedAt: new Date()
-    };
-    console.log('DEBUG - Updated category:', categories[categoryIndex]);
-    res.json(categories[categoryIndex]);
+    await category.update(req.body);
+    console.log('DEBUG - Updated category:', category);
+    res.json(category);
   } catch (error) {
     console.error('Update category error:', error);
     res.status(500).json({ error: error.message });
@@ -104,12 +197,12 @@ app.put('/api/categories/:id', async (req, res) => {
 app.delete('/api/categories/:id', async (req, res) => {
   console.log('DEBUG - Delete category called for id:', req.params.id);
   try {
-    const categoryIndex = categories.findIndex(cat => cat.id === parseInt(req.params.id));
-    if (categoryIndex === -1) {
+    const category = await Category.findByPk(req.params.id);
+    if (!category) {
       return res.status(404).json({ error: 'Category not found' });
     }
-    const deletedCategory = categories.splice(categoryIndex, 1)[0];
-    console.log('DEBUG - Deleted category:', deletedCategory);
+    await category.destroy();
+    console.log('DEBUG - Deleted category:', req.params.id);
     res.json({ message: 'Category deleted successfully' });
   } catch (error) {
     console.error('Delete category error:', error);
@@ -119,8 +212,14 @@ app.delete('/api/categories/:id', async (req, res) => {
 
 // Products routes
 app.get('/api/products', async (req, res) => {
-  console.log('DEBUG - Get products called, returning:', products.length, 'products');
+  console.log('DEBUG - Get products called');
   try {
+    const products = await Product.findAll({ 
+      include: [{ model: Category, as: 'category' }],
+      where: { isActive: true },
+      order: [['name', 'ASC']]
+    });
+    console.log('DEBUG - Returning:', products.length, 'products');
     res.json(products);
   } catch (error) {
     console.error('Get products error:', error);
@@ -130,20 +229,12 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
   console.log('DEBUG - Create product called with:', req.body);
-  console.log('DEBUG - Headers:', req.headers);
-
   try {
-    const product = {
-      id: productIdCounter++,
+    const product = await Product.create({
       ...req.body,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    products.push(product);
-    console.log('DEBUG - Created product:', product);
-    console.log('DEBUG - Total products now:', products.length);
+      isActive: true
+    });
+    console.log('DEBUG - Created product:', product.id);
     res.status(201).json(product);
   } catch (error) {
     console.error('Create product error:', error);
@@ -152,19 +243,34 @@ app.post('/api/products', async (req, res) => {
 });
 
 app.put('/api/products/:id', async (req, res) => {
-  console.log('DEBUG - Update product called, id:', req.params.id);
-  console.log('DEBUG - Update data:', req.body);
+  console.log('DEBUG - Update product called for id:', req.params.id);
   try {
-    const productIndex = products.findIndex(p => p.id == req.params.id);
-    if (productIndex === -1) {
-      console.log('DEBUG - Product not found');
+    const product = await Product.findByPk(req.params.id);
+    if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
-    products[productIndex] = { ...products[productIndex], ...req.body, updatedAt: new Date() };
-    console.log('DEBUG - Updated product:', products[productIndex]);
-    res.json(products[productIndex]);
+    await product.update(req.body);
+    console.log('DEBUG - Updated product:', product.id);
+    res.json(product);
   } catch (error) {
-    console.error('DEBUG - Update product error:', error);
+    console.error('Update product error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+  console.log('DEBUG - Delete product called for id:', req.params.id);
+  try {
+    const product = await Product.findByPk(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    // Soft delete - just set isActive to false
+    await product.update({ isActive: false });
+    console.log('DEBUG - Deleted (deactivated) product:', req.params.id);
+    res.json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    console.error('Delete product error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -173,15 +279,47 @@ app.put('/api/products/:id', async (req, res) => {
 app.post('/api/invoices', async (req, res) => {
   console.log('DEBUG - Create invoice called with:', req.body);
   try {
-    // Create invoice with pending status first
-    const invoice = {
-      id: Date.now(),
-      ...req.body,
-      createdAt: new Date(),
-      status: 'pending' // Start with pending status
-    };
+    const { items, cashierId, subtotal, discount = 0, tax = 0, total, paymentMethodId, paymentAmount } = req.body;
 
-    console.log('DEBUG - Created invoice:', invoice);
+    // Generate invoice number
+    const invoiceNumber = `INV-${Date.now()}`;
+
+    // Create invoice
+    const invoice = await Invoice.create({
+      invoiceNumber,
+      cashierId,
+      subtotal,
+      discount,
+      tax,
+      total,
+      status: 'draft'
+    });
+
+    // Create invoice items
+    if (items && items.length > 0) {
+      const invoiceItems = items.map(item => ({
+        invoiceId: invoice.id,
+        productId: item.id,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.quantity * item.price
+      }));
+      await InvoiceItem.bulkCreate(invoiceItems);
+    }
+
+    // Process payment if provided
+    if (paymentMethodId && paymentAmount) {
+      const change = paymentAmount - total;
+      await Payment.create({
+        invoiceId: invoice.id,
+        methodId: paymentMethodId,
+        amount: paymentAmount,
+        change: Math.max(0, change)
+      });
+      await invoice.update({ status: 'paid' });
+    }
+
+    console.log('DEBUG - Created invoice:', invoiceNumber);
     res.status(201).json(invoice);
   } catch (error) {
     console.error('Create invoice error:', error);
@@ -189,20 +327,49 @@ app.post('/api/invoices', async (req, res) => {
   }
 });
 
+// Get all invoices
+app.get('/api/invoices', async (req, res) => {
+  console.log('DEBUG - Get invoices called');
+  try {
+    const invoices = await Invoice.findAll({
+      include: [
+        { model: User, as: 'cashier', attributes: ['id', 'name'] },
+        { model: InvoiceItem, as: 'items', include: [{ model: Product, as: 'product' }] },
+        { model: Payment, as: 'payments', include: [{ model: PaymentMethod, as: 'method' }] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(invoices);
+  } catch (error) {
+    console.error('Get invoices error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Confirm payment route
-app.put('/api/invoices/:id/pay', (req, res) => {
+app.put('/api/invoices/:id/pay', async (req, res) => {
   console.log('DEBUG - Confirm payment for invoice:', req.params.id);
   try {
-    // In a real app, this would update the database
-    // For demo, we'll just return success
-    const invoice = {
-      id: parseInt(req.params.id),
-      ...req.body,
-      status: 'paid',
-      paidAt: new Date()
-    };
+    const invoice = await Invoice.findByPk(req.params.id);
+    if (!invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
 
-    console.log('DEBUG - Payment confirmed for invoice:', invoice);
+    const { paymentMethodId, amount } = req.body;
+    const change = amount - invoice.total;
+
+    // Create payment record
+    await Payment.create({
+      invoiceId: invoice.id,
+      methodId: paymentMethodId,
+      amount: amount,
+      change: Math.max(0, change)
+    });
+
+    // Update invoice status
+    await invoice.update({ status: 'paid' });
+
+    console.log('DEBUG - Payment confirmed for invoice:', invoice.invoiceNumber);
     res.json(invoice);
   } catch (error) {
     console.error('Confirm payment error:', error);
@@ -211,61 +378,42 @@ app.put('/api/invoices/:id/pay', (req, res) => {
 });
 
 // Reports routes
-app.get('/api/reports/sales', (req, res) => {
+app.get('/api/reports/sales', async (req, res) => {
   console.log('DEBUG - Get sales reports called with params:', req.query);
   try {
-    // For demo purposes, return mock data
-    // In a real app, this would query the database
-    const mockReports = [
-      {
-        id: 1764718098549,
-        createdAt: '2025-12-03T06:42:23.000Z',
-        cashier: { name: 'Admin' },
-        items: [
-          { product: '1', name: 'Nasi Goreng', quantity: 2, price: 25000, total: 50000 },
-          { product: '2', name: 'Es Teh', quantity: 1, price: 5000, total: 5000 }
-        ],
-        status: 'paid'
-      },
-      {
-        id: 1764718000000,
-        createdAt: '2025-12-03T05:30:00.000Z',
-        cashier: { name: 'Admin' },
-        items: [
-          { product: '3', name: 'Ayam Bakar', quantity: 1, price: 35000, total: 35000 }
-        ],
-        status: 'paid'
-      }
-    ];
+    const { startDate, endDate, cashierId } = req.query;
 
-    // Filter by date range if provided
-    let filteredReports = mockReports;
-    if (req.query.startDate && req.query.endDate) {
-      const startDate = new Date(req.query.startDate);
-      const endDate = new Date(req.query.endDate);
-      endDate.setHours(23, 59, 59, 999); // End of day
-
-      filteredReports = mockReports.filter(report => {
-        const reportDate = new Date(report.createdAt);
-        return reportDate >= startDate && reportDate <= endDate;
-      });
+    // Build where clause
+    const whereClause = { status: 'paid' };
+    
+    if (startDate && endDate) {
+      whereClause.createdAt = {
+        [require('sequelize').Op.between]: [
+          new Date(startDate),
+          new Date(endDate)
+        ]
+      };
     }
 
-    // Filter by cashier if provided
-    if (req.query.cashier) {
-      filteredReports = filteredReports.filter(report =>
-        report.cashier.name.toLowerCase().includes(req.query.cashier.toLowerCase())
-      );
+    if (cashierId) {
+      whereClause.cashierId = cashierId;
     }
 
-    const totalSales = filteredReports.reduce((sum, report) =>
-      sum + report.items.reduce((itemSum, item) => itemSum + item.total, 0), 0
-    );
+    const invoices = await Invoice.findAll({
+      where: whereClause,
+      include: [
+        { model: User, as: 'cashier', attributes: ['id', 'name'] },
+        { model: InvoiceItem, as: 'items', include: [{ model: Product, as: 'product' }] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
 
-    console.log('DEBUG - Returning reports:', filteredReports.length, 'reports, total sales:', totalSales);
+    const totalSales = invoices.reduce((sum, inv) => sum + parseFloat(inv.total), 0);
+
+    console.log('DEBUG - Returning reports:', invoices.length, 'invoices, total sales:', totalSales);
     res.json({
-      invoices: filteredReports,
-      totalSales: totalSales
+      invoices,
+      totalSales
     });
   } catch (error) {
     console.error('Get sales reports error:', error);
@@ -273,11 +421,31 @@ app.get('/api/reports/sales', (req, res) => {
   }
 });
 
-app.get('/api/reports/sales/pdf', (req, res) => {
+app.get('/api/reports/sales/pdf', async (req, res) => {
   console.log('DEBUG - Export sales PDF called with params:', req.query);
   try {
-    // For demo, return a simple PDF
     const PDFDocument = require('pdfkit');
+    const { startDate, endDate } = req.query;
+
+    // Get sales data
+    const whereClause = { status: 'paid' };
+    if (startDate && endDate) {
+      whereClause.createdAt = {
+        [require('sequelize').Op.between]: [
+          new Date(startDate),
+          new Date(endDate)
+        ]
+      };
+    }
+
+    const invoices = await Invoice.findAll({
+      where: whereClause,
+      include: [
+        { model: User, as: 'cashier', attributes: ['name'] },
+        { model: InvoiceItem, as: 'items', include: [{ model: Product, as: 'product' }] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
 
     const doc = new PDFDocument();
     res.setHeader('Content-Type', 'application/pdf');
@@ -287,8 +455,20 @@ app.get('/api/reports/sales/pdf', (req, res) => {
     doc.fontSize(20).text('Sales Report', { align: 'center' });
     doc.moveDown();
     doc.fontSize(12).text(`Generated on: ${new Date().toLocaleString()}`);
+    if (startDate && endDate) {
+      doc.text(`Period: ${startDate} to ${endDate}`);
+    }
     doc.moveDown();
-    doc.text('This is a demo PDF report.');
+
+    // Add invoice details
+    let totalSales = 0;
+    invoices.forEach((invoice, index) => {
+      doc.fontSize(12).text(`Invoice #${invoice.invoiceNumber} - ${invoice.cashier?.name || 'N/A'} - Rp ${parseFloat(invoice.total).toLocaleString('id-ID')}`, { continued: false });
+      totalSales += parseFloat(invoice.total);
+    });
+
+    doc.moveDown();
+    doc.fontSize(14).text(`Total Sales: Rp ${totalSales.toLocaleString('id-ID')}`, { bold: true });
     doc.end();
 
   } catch (error) {
@@ -297,10 +477,26 @@ app.get('/api/reports/sales/pdf', (req, res) => {
   }
 });
 
-// Test endpoint
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Server working' });
+// Payment methods routes
+app.get('/api/payment-methods', async (req, res) => {
+  try {
+    const methods = await PaymentMethod.findAll();
+    res.json(methods);
+  } catch (error) {
+    console.error('Get payment methods error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
+// Test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Server working with database' });
+});
+
+// Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Initialize database first, then start server
+initDatabase().then(() => {
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+});
