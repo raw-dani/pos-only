@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_BASE_URL from '../utils/api';
 
 const Reports = () => {
   const [reports, setReports] = useState([]);
@@ -23,7 +24,7 @@ const Reports = () => {
       if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.cashier) params.append('cashier', filters.cashier);
 
-      const response = await axios.get(`http://localhost:5000/api/reports/sales?${params}`, {
+      const response = await axios.get(`${API_BASE_URL}/api/reports/sales?${params}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 
@@ -45,7 +46,7 @@ const Reports = () => {
       if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.cashier) params.append('cashier', filters.cashier);
 
-      const response = await axios.get(`http://localhost:5000/api/reports/sales/pdf?${params}`, {
+      const response = await axios.get(`${API_BASE_URL}/api/reports/sales/pdf?${params}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         responseType: 'blob'
       });

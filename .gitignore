@@ -36,3 +36,4 @@ coverage/
 .vscode/
 *.swp
 *.swo
+token.txt
