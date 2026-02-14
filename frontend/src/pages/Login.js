@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../utils/api';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -17,7 +18,7 @@ const Login = () => {
     setLoading(true);
     try {
       console.log('DEBUG LOGIN - Attempting login with:', username);
-      const res = await axios.post('http://localhost:5000/api/auth/login', { username, password });
+      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password });
       console.log('DEBUG LOGIN - Response received:', res.data);
       localStorage.setItem('token', res.data.token);
       navigate('/pos');

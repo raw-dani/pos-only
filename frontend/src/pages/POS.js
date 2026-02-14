@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_BASE_URL from '../utils/api';
 
 const POS = () => {
   const [products, setProducts] = useState([]);
@@ -16,13 +17,13 @@ const POS = () => {
     const fetchData = async () => {
       try {
         // Fetch products
-        const productsRes = await axios.get('http://localhost:5000/api/products', {
+        const productsRes = await axios.get(`${API_BASE_URL}/api/products`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setProducts(productsRes.data);
 
         // Fetch categories
-        const categoriesRes = await axios.get('http://localhost:5000/api/categories', {
+        const categoriesRes = await axios.get(`${API_BASE_URL}/api/categories`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setCategories(categoriesRes.data);
@@ -107,7 +108,7 @@ const POS = () => {
         total: item.price       // total price for this item (quantity * unitPrice)
       }));
 
-      const invoiceResponse = await axios.post('http://localhost:5000/api/invoices', { items: formattedItems }, {
+      const invoiceResponse = await axios.post(`${API_BASE_URL}/api/invoices`, { items: formattedItems }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 
@@ -132,7 +133,7 @@ const POS = () => {
   const confirmPayment = async () => {
     try {
       setLoading(true);
-      const response = await axios.put(`http://localhost:5000/api/invoices/${currentInvoice.id}/pay`,
+      const response = await axios.put(`${API_BASE_URL}/api/invoices/${currentInvoice.id}/pay`,
         { ...currentInvoice },
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
