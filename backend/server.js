@@ -17,8 +17,13 @@ const PaymentMethod = require('./models/PaymentMethod');
 const auth = require('./middleware/auth');
 const rbac = require('./middleware/rbac');
 const validation = require('./utils/validation');
+const production = require('./middleware/production');
 
 const app = express();
+
+// Apply production middleware
+app.use(production.securityHeaders);
+app.use(production.generalLimiter);
 
 // CORS configuration - support multiple origins for development and production
 const corsOptions = {
@@ -143,8 +148,8 @@ const seedInitialData = async () => {
   }
 };
 
-// Login route with database authentication - with validation
-app.post('/api/auth/login', validation.validate(validation.loginSchema), async (req, res) => {
+// Login route with database authentication - with validation and rate limiting
+app.post('/api/auth/login', production.loginLimiter, validation.validate(validation.loginSchema), async (req, res) => {
   console.log('DEBUG - Login called');
   try {
     const { username, password } = req.body;
