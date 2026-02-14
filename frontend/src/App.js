@@ -4,18 +4,21 @@ import Login from './pages/Login';
 import POS from './pages/POS';
 import Products from './pages/Products';
 import Reports from './pages/Reports';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/pos" element={<POS />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/" element={<Login />} />
-      </Routes>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/pos" element={<POS />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/" element={<Login />} />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
