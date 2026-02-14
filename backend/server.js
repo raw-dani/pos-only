@@ -16,6 +16,7 @@ const PaymentMethod = require('./models/PaymentMethod');
 // Import middleware
 const auth = require('./middleware/auth');
 const rbac = require('./middleware/rbac');
+const validation = require('./utils/validation');
 
 const app = express();
 
@@ -114,8 +115,8 @@ const seedInitialData = async () => {
   }
 };
 
-// Login route with database authentication
-app.post('/api/auth/login', async (req, res) => {
+// Login route with database authentication - with validation
+app.post('/api/auth/login', validation.validate(validation.loginSchema), async (req, res) => {
   console.log('DEBUG - Login called');
   try {
     const { username, password } = req.body;
@@ -170,7 +171,7 @@ app.get('/api/categories', auth, rbac.requirePermission('categories:read'), asyn
   }
 });
 
-app.post('/api/categories', auth, rbac.requirePermission('categories:create'), async (req, res) => {
+app.post('/api/categories', auth, rbac.requirePermission('categories:create'), validation.validate(validation.categorySchema), async (req, res) => {
   console.log('DEBUG - Create category called with:', req.body);
   try {
     const category = await Category.create(req.body);
@@ -231,7 +232,7 @@ app.get('/api/products', auth, rbac.requirePermission('products:read'), async (r
   }
 });
 
-app.post('/api/products', auth, rbac.requirePermission('products:create'), async (req, res) => {
+app.post('/api/products', auth, rbac.requirePermission('products:create'), validation.validate(validation.productSchema), async (req, res) => {
   console.log('DEBUG - Create product called with:', req.body);
   try {
     const product = await Product.create({
@@ -280,7 +281,7 @@ app.delete('/api/products/:id', auth, rbac.requirePermission('products:delete'),
 });
 
 // Invoices routes - Protected with RBAC
-app.post('/api/invoices', auth, rbac.requirePermission('invoices:create'), async (req, res) => {
+app.post('/api/invoices', auth, rbac.requirePermission('invoices:create'), validation.validate(validation.invoiceSchema), async (req, res) => {
   console.log('DEBUG - Create invoice called with:', req.body);
   try {
     const { items, cashierId, subtotal, discount = 0, tax = 0, total, paymentMethodId, paymentAmount } = req.body;
@@ -351,7 +352,7 @@ app.get('/api/invoices', auth, rbac.requirePermission('invoices:read'), async (r
 });
 
 // Confirm payment route - Protected with RBAC
-app.put('/api/invoices/:id/pay', auth, rbac.requirePermission('invoices:update'), async (req, res) => {
+app.put('/api/invoices/:id/pay', auth, rbac.requirePermission('invoices:update'), validation.validate(validation.paymentSchema), async (req, res) => {
   console.log('DEBUG - Confirm payment for invoice:', req.params.id);
   try {
     const invoice = await Invoice.findByPk(req.params.id);
