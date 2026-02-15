@@ -102,14 +102,23 @@ const POS = () => {
     try {
       // Format items sesuai dengan yang diharapkan backend
       const formattedItems = cart.map(item => ({
-        product: item.product,  // product ID
+        productId: item.product,  // product ID - use productId instead of product
         name: item.name,        // product name
         quantity: item.quantity,
-        price: item.unitPrice,  // unit price per item
-        total: item.price       // total price for this item (quantity * unitPrice)
+        price: parseFloat(item.unitPrice),  // unit price per item
+        total: parseFloat(item.price)       // total price for this item
       }));
 
-      const invoiceResponse = await axios.post(`${API_BASE_URL}/api/invoices`, { items: formattedItems }, {
+      // Calculate totals
+      const subtotal = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
+      const total = subtotal;
+
+      const invoiceResponse = await axios.post(`${API_BASE_URL}/api/invoices`, { 
+        items: formattedItems,
+        cashierId: 1, // Default to admin user ID - in production, get from auth
+        subtotal: subtotal,
+        total: total
+      }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 

@@ -88,14 +88,15 @@ const productUpdateSchema = Joi.object({
   isActive: Joi.boolean()
 }).min(1);
 
-// Invoice item validation - allow zero for price/total
+// Invoice item validation - allow zero for price/total, support both product and productId
 const invoiceItemSchema = Joi.object({
-  product: objectId.required(),
+  product: objectId,
+  productId: objectId,
   name: name.required(),
   quantity: quantity.required(),
   price: Joi.number().min(0).required(),
   total: Joi.number().min(0).required()
-});
+}).or('product', 'productId');
 
 // Invoice validation - simplified for frontend compatibility
 const invoiceSchema = Joi.object({
