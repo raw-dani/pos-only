@@ -88,31 +88,31 @@ const productUpdateSchema = Joi.object({
   isActive: Joi.boolean()
 }).min(1);
 
-// Invoice item validation
+// Invoice item validation - allow zero for price/total
 const invoiceItemSchema = Joi.object({
   product: objectId.required(),
   name: name.required(),
   quantity: quantity.required(),
-  price: price.required(),
-  total: price.required()
+  price: Joi.number().min(0).required(),
+  total: Joi.number().min(0).required()
 });
 
-// Invoice validation
+// Invoice validation - simplified for frontend compatibility
 const invoiceSchema = Joi.object({
   items: Joi.array().items(invoiceItemSchema).min(1).required(),
-  cashierId: objectId.allow(null),
-  subtotal: price.required(),
+  cashierId: objectId.allow(null, ''),
+  subtotal: Joi.number().min(0).allow(null),
   discount: Joi.number().min(0).default(0),
   tax: Joi.number().min(0).default(0),
-  total: price.required(),
-  paymentMethodId: objectId.allow(null),
+  total: Joi.number().min(0).allow(null),
+  paymentMethodId: objectId.allow(null, ''),
   paymentAmount: Joi.number().min(0).allow(null)
 });
 
-// Payment validation
+// Payment validation - allow zero and flexible amount
 const paymentSchema = Joi.object({
   paymentMethodId: objectId.required(),
-  amount: price.required()
+  amount: Joi.number().min(0).required()
 });
 
 // User validation
