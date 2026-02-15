@@ -134,8 +134,28 @@ const POS = () => {
   const confirmPayment = async () => {
     try {
       setLoading(true);
+      
+      // Get payment methods first
+      const methodsRes = await axios.get(`${API_BASE_URL}/api/payment-methods`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const paymentMethods = methodsRes.data;
+      
+      // Use the first payment method (Cash) as default
+      const defaultPaymentMethod = paymentMethods.find(m => m.type === 'cash') || paymentMethods[0];
+      
+      if (!defaultPaymentMethod) {
+        throw new Error('No payment method available');
+      }
+      
+      // Calculate total from invoice items
+      const totalAmount = currentInvoice.items.reduce((sum, item) => sum + item.total, 0);
+      
       const response = await axios.put(`${API_BASE_URL}/api/invoices/${currentInvoice.id}/pay`,
-        { ...currentInvoice },
+        { 
+          paymentMethodId: defaultPaymentMethod.id,
+          amount: totalAmount
+        },
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
 

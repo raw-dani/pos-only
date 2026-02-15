@@ -6,8 +6,13 @@
 const Joi = require('joi');
 
 // Common validation patterns
-const objectId = Joi.string().pattern(/^[0-9]+$/).messages({
-  'string.pattern.base': 'ID must be a valid number'
+// Allow both string and number for IDs
+const objectId = Joi.alternatives().try(
+  Joi.string().pattern(/^[0-9]+$/),
+  Joi.number().integer().positive()
+).messages({
+  'string.pattern.base': 'ID must be a valid number',
+  'number.base': 'ID must be a valid number'
 });
 
 const username = Joi.string().alphanum().min(3).max(30).messages({
