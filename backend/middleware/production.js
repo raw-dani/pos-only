@@ -17,7 +17,9 @@ const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true
+  validate: {
+    xForwardedForHeader: false
+  }
 });
 
 // Stricter rate limiter for login endpoint
@@ -30,7 +32,6 @@ const loginLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true,
   skipSuccessfulRequests: true // only count failed requests
 });
 
