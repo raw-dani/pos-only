@@ -577,7 +577,7 @@ const Reports = () => {
                         fontWeight: '600',
                         color: '#10B981'
                       }}>
-                        Rp {(report.items?.reduce((sum, item) => sum + (item.total || 0), 0) || 0).toLocaleString('id-ID')}
+                        Rp {Number(report.total || 0).toLocaleString('id-ID')}
                       </td>
                       <td style={{
                         padding: '12px 16px',
