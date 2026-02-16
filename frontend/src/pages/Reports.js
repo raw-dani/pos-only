@@ -6,6 +6,8 @@ const Reports = () => {
   const [reports, setReports] = useState([]);
   const [totalSales, setTotalSales] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -539,12 +541,19 @@ const Reports = () => {
                 </thead>
                 <tbody>
                   {reports.map((report, index) => (
-                    <tr key={report.id || index} style={{
-                      borderBottom: '1px solid #E5E7EB',
-                      transition: 'background-color 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#F9FAFB'}
-                    onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = 'transparent'}
+                    <tr 
+                      key={report.id || index} 
+                      style={{
+                        borderBottom: '1px solid #E5E7EB',
+                        transition: 'background-color 0.2s',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        setSelectedInvoice(report);
+                        setShowDetail(true);
+                      }}
+                      onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#EBF5FF'}
+                      onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = 'transparent'}
                     >
                       <td style={{
                         padding: '12px 16px',
@@ -603,6 +612,203 @@ const Reports = () => {
           )}
         </div>
       </div>
+
+      {/* Invoice Detail Modal */}
+      {showDetail && selectedInvoice && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #E5E7EB',
+            width: '100%',
+            maxWidth: '600px',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <h2 style={{
+                color: '#1F2937',
+                margin: '0',
+                fontSize: '20px',
+                fontWeight: '600'
+              }}>
+                Invoice #{selectedInvoice.id} Details
+              </h2>
+              <button
+                onClick={() => setShowDetail(false)}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#6B7280'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <p style={{ margin: '5px 0', color: '#6B7280' }}>
+                <strong>Date:</strong> {new Date(selectedInvoice.createdAt).toLocaleString('id-ID')}
+              </p>
+              <p style={{ margin: '5px 0', color: '#6B7280' }}>
+                <strong>Cashier:</strong> {selectedInvoice.cashier?.name || 'Unknown'}
+              </p>
+              <p style={{ margin: '5px 0' }}>
+                <strong>Status:</strong>
+                <span style={{
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  color: '#FFFFFF',
+                  backgroundColor: selectedInvoice.status === 'paid' ? '#10B981' : '#F59E0B',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  marginLeft: '8px',
+                  textTransform: 'uppercase'
+                }}>
+                  {selectedInvoice.status}
+                </span>
+              </p>
+            </div>
+
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              marginBottom: '20px',
+              border: '1px solid #E5E7EB'
+            }}>
+              <thead>
+                <tr style={{ backgroundColor: '#F9FAFB' }}>
+                  <th style={{
+                    padding: '12px',
+                    textAlign: 'left',
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    borderBottom: '1px solid #E5E7EB',
+                    fontSize: '14px'
+                  }}>Product</th>
+                  <th style={{
+                    padding: '12px',
+                    textAlign: 'center',
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    borderBottom: '1px solid #E5E7EB',
+                    fontSize: '14px'
+                  }}>Qty</th>
+                  <th style={{
+                    padding: '12px',
+                    textAlign: 'right',
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    borderBottom: '1px solid #E5E7EB',
+                    fontSize: '14px'
+                  }}>Price</th>
+                  <th style={{
+                    padding: '12px',
+                    textAlign: 'right',
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    borderBottom: '1px solid #E5E7EB',
+                    fontSize: '14px'
+                  }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedInvoice.items?.map((item, index) => (
+                  <tr key={index}>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #E5E7EB' }}>
+                      {item.name || item.product?.name || 'Product'}
+                    </td>
+                    <td style={{
+                      padding: '12px',
+                      textAlign: 'center',
+                      borderBottom: '1px solid #E5E7EB'
+                    }}>
+                      {item.quantity}
+                    </td>
+                    <td style={{
+                      padding: '12px',
+                      textAlign: 'right',
+                      borderBottom: '1px solid #E5E7EB'
+                    }}>
+                      Rp {Number(item.price || 0).toLocaleString('id-ID')}
+                    </td>
+                    <td style={{
+                      padding: '12px',
+                      textAlign: 'right',
+                      borderBottom: '1px solid #E5E7EB'
+                    }}>
+                      Rp {Number(item.total || 0).toLocaleString('id-ID')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div style={{
+              borderTop: '1px solid #E5E7EB',
+              paddingTop: '16px',
+              marginBottom: '20px'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '18px',
+                fontWeight: 'bold'
+              }}>
+                <span style={{ color: '#1F2937' }}>Total Amount:</span>
+                <span style={{ color: '#10B981' }}>
+                  Rp {Number(selectedInvoice.total || 0).toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => setShowDetail(false)}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: '#6B7280',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#4B5563'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#6B7280'}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
