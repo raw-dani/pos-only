@@ -415,8 +415,16 @@ app.put('/api/invoices/:id/pay', auth, rbac.requirePermission('invoices:update')
     // Update invoice status
     await invoice.update({ status: 'paid' });
 
+    // Fetch the complete invoice with items
+    const completeInvoice = await Invoice.findByPk(invoice.id, {
+      include: [
+        { model: User, as: 'cashier', attributes: ['id', 'name'] },
+        { model: InvoiceItem, as: 'items', include: [{ model: Product, as: 'product' }] }
+      ]
+    });
+
     console.log('DEBUG - Payment confirmed for invoice:', invoice.invoiceNumber);
-    res.json(invoice);
+    res.json(completeInvoice);
   } catch (error) {
     console.error('Confirm payment error:', error);
     res.status(500).json({ error: error.message });
