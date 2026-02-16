@@ -126,7 +126,7 @@ const Reports = () => {
         </h1>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => window.location.href = '/pos'}
             style={{
               padding: '8px 16px',
               backgroundColor: '#10B981',
