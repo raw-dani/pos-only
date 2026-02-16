@@ -337,10 +337,10 @@ app.post('/api/invoices', auth, rbac.requirePermission('invoices:create'), valid
     if (items && items.length > 0) {
       const invoiceItems = items.map(item => ({
         invoiceId: invoice.id,
-        productId: item.id,
+        productId: item.productId || item.product,  // Support both productId and product
         quantity: item.quantity,
         price: item.price,
-        total: item.quantity * item.price
+        total: item.total || (item.quantity * item.price)  // Use provided total or calculate
       }));
       await InvoiceItem.bulkCreate(invoiceItems);
     }
