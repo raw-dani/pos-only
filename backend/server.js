@@ -12,6 +12,7 @@ const { Invoice, InvoiceItem, Payment } = require('./models/Invoice');
 const User = require('./models/User');
 const Role = require('./models/Role');
 const PaymentMethod = require('./models/PaymentMethod');
+const Setting = require('./models/Setting');
 
 // Import middleware
 const auth = require('./middleware/auth');
@@ -538,6 +539,57 @@ app.get('/api/payment-methods', auth, rbac.requirePermission('payment-methods:re
     res.json(methods);
   } catch (error) {
     console.error('Get payment methods error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Settings routes - Protected with RBAC (only Admin can access)
+app.get('/api/settings', auth, rbac.requirePermission('settings:read'), async (req, res) => {
+  console.log('DEBUG - Get settings called');
+  try {
+    let setting = await Setting.findOne();
+    
+    // Create default settings if not exist
+    if (!setting) {
+      setting = await Setting.create({
+        storeName: 'Toko Saya',
+        storeAddress: '',
+        storePhone: '',
+        storeEmail: '',
+        storeWhatsApp: '',
+        storeInstagram: '',
+        storeFacebook: '',
+        storeTwitter: '',
+        taxRate: 0,
+        currency: 'IDR'
+      });
+    }
+    
+    res.json(setting);
+  } catch (error) {
+    console.error('Get settings error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/settings', auth, rbac.requirePermission('settings:update'), async (req, res) => {
+  console.log('DEBUG - Update settings called with:', req.body);
+  try {
+    let setting = await Setting.findOne();
+    
+    if (!setting) {
+      // Create new settings if not exist
+      setting = await Setting.create(req.body);
+    } else {
+      // Update existing settings
+      await setting.update(req.body);
+      setting = await Setting.findOne();
+    }
+    
+    console.log('DEBUG - Settings updated successfully');
+    res.json(setting);
+  } catch (error) {
+    console.error('Update settings error:', error);
     res.status(500).json({ error: error.message });
   }
 });

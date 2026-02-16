@@ -302,6 +302,26 @@ const POS = () => {
               📦 Manage Products
             </button>
           )}
+          {/* Show Settings button only for Admin */}
+          {isAdmin() && (
+            <button
+              onClick={() => window.location.href = '/settings'}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#6B7280',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#4B5563'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#6B7280'}
+            >
+              ⚙️ Settings
+            </button>
+          )}
           {/* Show Reports button for all authenticated users */}
           <button
             onClick={() => window.location.href = '/reports'}

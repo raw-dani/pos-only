@@ -9,16 +9,36 @@ const Setting = sequelize.define('Setting', {
   },
   storeName: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: false,
+    defaultValue: 'Toko Saya'
   },
   storeAddress: {
-    type: DataTypes.TEXT
+    type: DataTypes.TEXT,
+    defaultValue: ''
   },
   storePhone: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    defaultValue: ''
   },
   storeEmail: {
-    type: DataTypes.STRING
+    type: DataTypes.STRING,
+    defaultValue: ''
+  },
+  storeWhatsApp: {
+    type: DataTypes.STRING,
+    defaultValue: ''
+  },
+  storeInstagram: {
+    type: DataTypes.STRING,
+    defaultValue: ''
+  },
+  storeFacebook: {
+    type: DataTypes.STRING,
+    defaultValue: ''
+  },
+  storeTwitter: {
+    type: DataTypes.STRING,
+    defaultValue: ''
   },
   taxRate: {
     type: DataTypes.DECIMAL(5, 2),
