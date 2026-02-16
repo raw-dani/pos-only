@@ -980,6 +980,10 @@ const POS = () => {
                 Payment Summary
               </h3>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span>Total Items:</span>
+                <span>{currentInvoice.items.reduce((sum, item) => sum + Number(item.quantity), 0)} items</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span>Items Total:</span>
                 <span>Rp {Number(currentInvoice.items.reduce((sum, item) => sum + Number(item.total), 0)).toLocaleString('id-ID')}</span>
               </div>
