@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../utils/api';
 import { getUserRole, isAdmin, isManager } from '../utils/auth';
+import Footer from '../components/Footer';
 
 const POS = () => {
   const [products, setProducts] = useState([]);
@@ -1109,6 +1110,9 @@ const POS = () => {
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };
