@@ -158,7 +158,7 @@ const POS = () => {
       }
       
       // Calculate total from invoice items
-      const totalAmount = currentInvoice.items.reduce((sum, item) => sum + item.total, 0);
+      const totalAmount = currentInvoice.items.reduce((sum, item) => sum + Number(item.total), 0);
       
       const response = await axios.put(`${API_BASE_URL}/api/invoices/${currentInvoice.id}/pay`,
         { 
@@ -981,7 +981,7 @@ const POS = () => {
               </h3>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <span>Items Total:</span>
-                <span>Rp {currentInvoice.items.reduce((sum, item) => sum + item.total, 0).toLocaleString('id-ID')}</span>
+                <span>Rp {Number(currentInvoice.items.reduce((sum, item) => sum + Number(item.total), 0)).toLocaleString('id-ID')}</span>
               </div>
               <div style={{
                 display: 'flex',
@@ -991,7 +991,7 @@ const POS = () => {
                 color: '#10B981'
               }}>
                 <span>Total Amount:</span>
-                <span>Rp {currentInvoice.items.reduce((sum, item) => sum + item.total, 0).toLocaleString('id-ID')}</span>
+                <span>Rp {Number(currentInvoice.items.reduce((sum, item) => sum + Number(item.total), 0)).toLocaleString('id-ID')}</span>
               </div>
             </div>
 
