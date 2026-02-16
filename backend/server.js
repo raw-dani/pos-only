@@ -436,23 +436,26 @@ app.put('/api/invoices/:id/pay', auth, rbac.requirePermission('invoices:update')
 app.get('/api/reports/sales', auth, rbac.requirePermission('reports:read'), async (req, res) => {
   console.log('DEBUG - Get sales reports called with params:', req.query);
   try {
-    const { startDate, endDate, cashierId } = req.query;
+    const { startDate, endDate, cashier, cashierId } = req.query;
 
-    // Build where clause
-    const whereClause = { status: 'paid' };
+    // Build where clause - get ALL invoices regardless of status for reports
+    const whereClause = {};
     
     if (startDate && endDate) {
       whereClause.createdAt = {
         [require('sequelize').Op.between]: [
           new Date(startDate),
-          new Date(endDate)
+          new Date(endDate + 'T23:59:59') // Include full end date
         ]
       };
     }
 
+    // Support both cashier and cashierId params
     if (cashierId) {
       whereClause.cashierId = cashierId;
     }
+
+    console.log('DEBUG - Where clause:', JSON.stringify(whereClause));
 
     const invoices = await Invoice.findAll({
       where: whereClause,
@@ -463,11 +466,22 @@ app.get('/api/reports/sales', auth, rbac.requirePermission('reports:read'), asyn
       order: [['createdAt', 'DESC']]
     });
 
-    const totalSales = invoices.reduce((sum, inv) => sum + parseFloat(inv.total), 0);
+    console.log('DEBUG - Found invoices:', invoices.length);
+    
+    // Filter by cashier name if provided (client-side filter)
+    let filteredInvoices = invoices;
+    if (cashier) {
+      filteredInvoices = invoices.filter(inv => 
+        inv.cashier && inv.cashier.name.toLowerCase().includes(cashier.toLowerCase())
+      );
+      console.log('DEBUG - After cashier filter:', filteredInvoices.length);
+    }
 
-    console.log('DEBUG - Returning reports:', invoices.length, 'invoices, total sales:', totalSales);
+    const totalSales = filteredInvoices.reduce((sum, inv) => sum + parseFloat(inv.total || 0), 0);
+
+    console.log('DEBUG - Returning reports:', filteredInvoices.length, 'invoices, total sales:', totalSales);
     res.json({
-      invoices,
+      invoices: filteredInvoices,
       totalSales
     });
   } catch (error) {
@@ -482,13 +496,13 @@ app.get('/api/reports/sales/pdf', auth, rbac.requirePermission('reports:export')
     const PDFDocument = require('pdfkit');
     const { startDate, endDate } = req.query;
 
-    // Get sales data
-    const whereClause = { status: 'paid' };
+    // Get sales data - include all invoices regardless of status
+    const whereClause = {};
     if (startDate && endDate) {
       whereClause.createdAt = {
         [require('sequelize').Op.between]: [
           new Date(startDate),
-          new Date(endDate)
+          new Date(endDate + 'T23:59:59')
         ]
       };
     }
@@ -501,6 +515,8 @@ app.get('/api/reports/sales/pdf', auth, rbac.requirePermission('reports:export')
       ],
       order: [['createdAt', 'DESC']]
     });
+
+    console.log('DEBUG - PDF export, found invoices:', invoices.length);
 
     const doc = new PDFDocument();
     res.setHeader('Content-Type', 'application/pdf');
@@ -518,8 +534,8 @@ app.get('/api/reports/sales/pdf', auth, rbac.requirePermission('reports:export')
     // Add invoice details
     let totalSales = 0;
     invoices.forEach((invoice, index) => {
-      doc.fontSize(12).text(`Invoice #${invoice.invoiceNumber} - ${invoice.cashier?.name || 'N/A'} - Rp ${parseFloat(invoice.total).toLocaleString('id-ID')}`, { continued: false });
-      totalSales += parseFloat(invoice.total);
+      doc.fontSize(12).text(`Invoice #${invoice.invoiceNumber} - ${invoice.cashier?.name || 'N/A'} - Rp ${parseFloat(invoice.total || 0).toLocaleString('id-ID')} - ${invoice.status}`, { continued: false });
+      totalSales += parseFloat(invoice.total || 0);
     });
 
     doc.moveDown();

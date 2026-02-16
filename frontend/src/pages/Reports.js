@@ -7,8 +7,8 @@ const Reports = () => {
   const [totalSales, setTotalSales] = useState(0);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: '',
+    endDate: '',
     cashier: ''
   });
 
