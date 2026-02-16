@@ -546,11 +546,14 @@ app.get('/api/payment-methods', auth, rbac.requirePermission('payment-methods:re
 // Settings routes - Protected with RBAC (only Admin can access)
 app.get('/api/settings', auth, rbac.requirePermission('settings:read'), async (req, res) => {
   console.log('DEBUG - Get settings called');
+  console.log('DEBUG - User role:', req.user?.role);
   try {
     let setting = await Setting.findOne();
+    console.log('DEBUG - Existing settings:', setting);
     
     // Create default settings if not exist
     if (!setting) {
+      console.log('DEBUG - Creating default settings...');
       setting = await Setting.create({
         storeName: 'Toko Saya',
         storeAddress: '',
@@ -563,6 +566,7 @@ app.get('/api/settings', auth, rbac.requirePermission('settings:read'), async (r
         taxRate: 0,
         currency: 'IDR'
       });
+      console.log('DEBUG - Default settings created:', setting);
     }
     
     res.json(setting);
@@ -574,19 +578,23 @@ app.get('/api/settings', auth, rbac.requirePermission('settings:read'), async (r
 
 app.put('/api/settings', auth, rbac.requirePermission('settings:update'), async (req, res) => {
   console.log('DEBUG - Update settings called with:', req.body);
+  console.log('DEBUG - User role:', req.user?.role);
   try {
     let setting = await Setting.findOne();
+    console.log('DEBUG - Existing settings:', setting);
     
     if (!setting) {
       // Create new settings if not exist
+      console.log('DEBUG - Creating new settings...');
       setting = await Setting.create(req.body);
     } else {
       // Update existing settings
+      console.log('DEBUG - Updating existing settings...');
       await setting.update(req.body);
       setting = await Setting.findOne();
     }
     
-    console.log('DEBUG - Settings updated successfully');
+    console.log('DEBUG - Settings updated successfully:', setting);
     res.json(setting);
   } catch (error) {
     console.error('Update settings error:', error);
