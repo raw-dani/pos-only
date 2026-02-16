@@ -357,8 +357,16 @@ app.post('/api/invoices', auth, rbac.requirePermission('invoices:create'), valid
       await invoice.update({ status: 'paid' });
     }
 
+    // Fetch the complete invoice with items
+    const completeInvoice = await Invoice.findByPk(invoice.id, {
+      include: [
+        { model: User, as: 'cashier', attributes: ['id', 'name'] },
+        { model: InvoiceItem, as: 'items', include: [{ model: Product, as: 'product' }] }
+      ]
+    });
+
     console.log('DEBUG - Created invoice:', invoiceNumber);
-    res.status(201).json(invoice);
+    res.status(201).json(completeInvoice);
   } catch (error) {
     console.error('Create invoice error:', error);
     res.status(500).json({ error: error.message });
