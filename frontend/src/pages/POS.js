@@ -8,12 +8,78 @@ const POS = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [cart, setCart] = useState([]);
+const [cart, setCart] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [showPendingOrders, setShowPendingOrders] = useState(false);
+
+  // Load pending orders from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('pendingOrders');
+    if (saved) {
+      try {
+        setPendingOrders(JSON.parse(saved));
+      } catch (e) {
+        console.error('Error loading pending orders:', e);
+      }
+    }
+  }, []);
+
+  // Save pending orders to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('pendingOrders', JSON.stringify(pendingOrders));
+  }, [pendingOrders]);
+
+  const saveAsPending = () => {
+    if (cart.length === 0) {
+      alert('Cart is empty');
+      return;
+    }
+
+    const orderName = prompt('Enter a name for this pending order:', `Order ${pendingOrders.length + 1}`);
+    if (!orderName) return;
+
+    const newPendingOrder = {
+      id: Date.now(),
+      name: orderName,
+      items: [...cart],
+      total: total,
+      createdAt: new Date().toISOString()
+    };
+
+    setPendingOrders([...pendingOrders, newPendingOrder]);
+    setCart([]);
+    setTotal(0);
+    alert('Order saved as pending!');
+  };
+
+  const loadPendingOrder = (order) => {
+    if (cart.length > 0) {
+      if (!confirm('Current cart has items. Replace with this pending order?')) {
+        return;
+      }
+    }
+
+    setCart(order.items);
+    setTotal(order.total);
+    setShowPendingOrders(false);
+  };
+
+  const deletePendingOrder = (orderId) => {
+    if (!confirm('Delete this pending order?')) return;
+    
+    const updated = pendingOrders.filter(o => o.id !== orderId);
+    setPendingOrders(updated);
+  };
+
+  const clearPendingOrders = () => {
+    if (!confirm('Clear all pending orders?')) return;
+    setPendingOrders([]);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -323,7 +389,7 @@ const POS = () => {
               ⚙️ Settings
             </button>
           )}
-          {/* Show Reports button for all authenticated users */}
+{/* Show Reports button for all authenticated users */}
           <button
             onClick={() => window.location.href = '/reports'}
             style={{
@@ -340,6 +406,24 @@ const POS = () => {
             onMouseLeave={(e) => e.target.style.backgroundColor = '#F59E0B'}
           >
             📊 Reports
+          </button>
+          {/* Pending Orders button */}
+          <button
+            onClick={() => setShowPendingOrders(true)}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: pendingOrders.length > 0 ? '#8B5CF6' : '#6B7280',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.backgroundColor = pendingOrders.length > 0 ? '#7C3AED' : '#4B5563'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = pendingOrders.length > 0 ? '#8B5CF6' : '#6B7280'}
+          >
+            📋 Pending ({pendingOrders.length})
           </button>
           {/* User info and role */}
           <span style={{
@@ -702,6 +786,26 @@ const POS = () => {
                   </div>
                 </div>
 
+<button
+                  onClick={saveAsPending}
+                  style={{
+                    width: '100%',
+                    padding: '10px 16px',
+                    backgroundColor: '#8B5CF6',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    marginBottom: '8px',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#7C3AED'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#8B5CF6'}
+                >
+                  📋 Save as Pending
+                </button>
                 <button
                   onClick={createInvoice}
                   disabled={loading}
@@ -727,6 +831,172 @@ const POS = () => {
           </div>
         </div>
       </div>
+
+      {/* Pending Orders Modal */}
+      {showPendingOrders && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #E5E7EB',
+            width: '100%',
+            maxWidth: '500px',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <h2 style={{
+                color: '#1F2937',
+                margin: '0',
+                fontSize: '20px',
+                fontWeight: '600'
+              }}>
+                📋 Pending Orders ({pendingOrders.length})
+              </h2>
+              <button
+                onClick={() => setShowPendingOrders(false)}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#6B7280'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {pendingOrders.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '40px',
+                color: '#6B7280'
+              }}>
+                <p>No pending orders</p>
+                <p style={{ fontSize: '14px' }}>Save current cart as pending to see it here</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ marginBottom: '16px' }}>
+                  {pendingOrders.map((order, index) => (
+                    <div
+                      key={order.id}
+                      style={{
+                        backgroundColor: '#F9FAFB',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '8px',
+                        padding: '16px',
+                        marginBottom: '12px'
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '8px'
+                      }}>
+                        <div>
+                          <span style={{ fontWeight: '600', color: '#1F2937' }}>
+                            {order.name}
+                          </span>
+                          <span style={{
+                            fontSize: '12px',
+                            color: '#6B7280',
+                            marginLeft: '8px'
+                          }}>
+                            {new Date(order.createdAt).toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => loadPendingOrder(order)}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: '#10B981',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              transition: 'background-color 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = '#10B981'}
+                          >
+                            Load
+                          </button>
+                          <button
+                            onClick={() => deletePendingOrder(order.id)}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: '#EF4444',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              transition: 'background-color 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#DC2626'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = '#EF4444'}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#6B7280' }}>
+                        {order.items.length} items • Total: <span style={{ color: '#10B981', fontWeight: '600' }}>
+                          Rp {parseFloat(order.total).toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {pendingOrders.length > 0 && (
+                  <button
+                    onClick={clearPendingOrders}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      backgroundColor: '#EF4444',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#DC2626'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#EF4444'}
+                  >
+                    🗑️ Clear All Pending Orders
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Payment Confirmation Modal */}
       {showPaymentConfirm && currentInvoice && (
