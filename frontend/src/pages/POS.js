@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from '../utils/api';
 import { getUserRole, isAdmin, isManager } from '../utils/auth';
 import Footer from '../components/Footer';
 
 const POS = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
-const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState(null);
@@ -349,10 +351,10 @@ const [cart, setCart] = useState([]);
           POS Invoice System
         </h1>
         <div style={{ display: 'flex', gap: '8px' }}>
-          {/* Show Manage Products button only for Admin and Manager */}
+{/* Show Manage Products button only for Admin and Manager */}
           {(isAdmin() || isManager()) && (
             <button
-              onClick={() => window.location.href = '/products'}
+              onClick={() => navigate('/products')}
               style={{
                 padding: '8px 16px',
                 backgroundColor: '#10B981',
@@ -372,7 +374,7 @@ const [cart, setCart] = useState([]);
           {/* Show Settings button only for Admin */}
           {isAdmin() && (
             <button
-              onClick={() => window.location.href = '/settings'}
+              onClick={() => navigate('/settings')}
               style={{
                 padding: '8px 16px',
                 backgroundColor: '#6B7280',
@@ -391,7 +393,7 @@ const [cart, setCart] = useState([]);
           )}
 {/* Show Reports button for all authenticated users */}
           <button
-            onClick={() => window.location.href = '/reports'}
+            onClick={() => navigate('/reports')}
             style={{
               padding: '8px 16px',
               backgroundColor: '#F59E0B',
