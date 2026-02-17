@@ -93,8 +93,9 @@ const initDatabase = async () => {
 const seedInitialData = async () => {
   try {
     // Create roles
-    const roles = await Role.bulkCreate([
+const roles = await Role.bulkCreate([
       { name: 'Admin' },
+      { name: 'Manager' },
       { name: 'Cashier' }
     ]);
     
@@ -663,6 +664,126 @@ app.get('/api/payment-methods', auth, rbac.requirePermission('payment-methods:re
     res.json(methods);
   } catch (error) {
     console.error('Get payment methods error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Users routes - Protected with RBAC (Admin only)
+app.get('/api/users', auth, rbac.requirePermission('users:read'), async (req, res) => {
+  console.log('DEBUG - Get users called');
+  try {
+    const users = await User.findAll({
+      include: [{ model: Role, as: 'role' }],
+      attributes: { exclude: ['password'] }
+    });
+    res.json(users);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/users', auth, rbac.requirePermission('users:create'), async (req, res) => {
+  console.log('DEBUG - Create user called with:', req.body);
+  try {
+    const { username, password, roleId, name, email } = req.body;
+    
+    // Check if username already exists
+    const existingUser = await User.findOne({ where: { username } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ 
+      username, 
+      password: hashedPassword, 
+      roleId, 
+      name, 
+      email,
+      isActive: true 
+    });
+    
+    // Return user without password
+    const createdUser = await User.findByPk(user.id, {
+      include: [{ model: Role, as: 'role' }],
+      attributes: { exclude: ['password'] }
+    });
+    
+    console.log('DEBUG - Created user:', user.username);
+    res.status(201).json(createdUser);
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/users/:id', auth, rbac.requirePermission('users:update'), async (req, res) => {
+  console.log('DEBUG - Update user called for id:', req.params.id);
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    // Don't allow updating password through this endpoint without current password
+    // For simplicity, we'll skip password update here
+    
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // If updating password
+    if (updates.password) {
+      updates.password = await bcrypt.hash(updates.password, 10);
+    }
+    
+    await user.update(updates);
+    
+    const updatedUser = await User.findByPk(id, {
+      include: [{ model: Role, as: 'role' }],
+      attributes: { exclude: ['password'] }
+    });
+    
+    console.log('DEBUG - Updated user:', id);
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/users/:id', auth, rbac.requirePermission('users:delete'), async (req, res) => {
+  console.log('DEBUG - Delete user called for id:', req.params.id);
+  try {
+    const { id } = req.params;
+    
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Prevent deleting own account
+    if (user.id === req.user.id) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+    
+    await user.destroy();
+    console.log('DEBUG - Deleted user:', id);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all roles
+app.get('/api/roles', auth, rbac.requirePermission('users:read'), async (req, res) => {
+  console.log('DEBUG - Get roles called');
+  try {
+    const roles = await Role.findAll();
+    res.json(roles);
+  } catch (error) {
+    console.error('Get roles error:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -472,8 +472,26 @@ const generateInvoiceHTML = (invoice) => {
               📦 Manage Products
             </button>
           )}
-          {/* Show Settings button only for Admin */}
+{/* Show Users and Settings buttons only for Admin */}
           {isAdmin() && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => navigate('/users')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#8B5CF6',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#7C3AED'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#8B5CF6'}
+            >
+              👥 Users
+            </button>
             <button
               onClick={() => navigate('/settings')}
               style={{
@@ -491,6 +509,7 @@ const generateInvoiceHTML = (invoice) => {
             >
               ⚙️ Settings
             </button>
+            </div>
           )}
 {/* Show Reports button for all authenticated users */}
           <button
