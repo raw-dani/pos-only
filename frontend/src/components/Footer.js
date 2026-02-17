@@ -32,112 +32,57 @@ const Footer = () => {
     return null;
   }
 
+  // Build info string
+  const infoParts = [];
+  if (settings.storeAddress) infoParts.push(`📍 ${settings.storeAddress}`);
+  if (settings.storePhone) infoParts.push(`📞 ${settings.storePhone}`);
+  if (settings.storeWhatsApp) infoParts.push(`💬 ${settings.storeWhatsApp}`);
+  if (settings.storeEmail) infoParts.push(`✉️ ${settings.storeEmail}`);
+
+  const socialParts = [];
+  if (settings.storeInstagram) socialParts.push(`📷 ${settings.storeInstagram}`);
+  if (settings.storeFacebook) socialParts.push(`📘 ${settings.storeFacebook}`);
+  if (settings.storeTwitter) socialParts.push(`🐦 ${settings.storeTwitter}`);
+
   return (
     <footer style={{
-      backgroundColor: '#1F2937',
-      color: '#FFFFFF',
-      padding: '24px',
+      backgroundColor: '#F9FAFB',
+      borderTop: '1px solid #E5E7EB',
+      padding: '12px 24px',
       marginTop: 'auto'
     }}>
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '24px'
-      }}>
-        {/* Store Info */}
-        {(settings.storeName || settings.storeAddress) && (
-          <div>
-            <h3 style={{
-              margin: '0 0 12px 0',
-              fontSize: '16px',
-              fontWeight: '600',
-              color: '#2D8CFF'
-            }}>
-              {settings.storeName || 'Toko'}
-            </h3>
-            {settings.storeAddress && (
-              <p style={{
-                margin: '0 0 8px 0',
-                fontSize: '14px',
-                color: '#9CA3AF',
-                lineHeight: '1.5'
-              }}>
-                📍 {settings.storeAddress}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Contact Info */}
-        {(settings.storePhone || settings.storeEmail || settings.storeWhatsApp) && (
-          <div>
-            <h3 style={{
-              margin: '0 0 12px 0',
-              fontSize: '16px',
-              fontWeight: '600',
-              color: '#2D8CFF'
-            }}>
-              Kontak
-            </h3>
-            {settings.storePhone && (
-              <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#9CA3AF' }}>
-                📞 {settings.storePhone}
-              </p>
-            )}
-            {settings.storeEmail && (
-              <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#9CA3AF' }}>
-                ✉️ {settings.storeEmail}
-              </p>
-            )}
-            {settings.storeWhatsApp && (
-              <p style={{ margin: '0', fontSize: '14px', color: '#9CA3AF' }}>
-                💬 {settings.storeWhatsApp}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Social Media */}
-        {(settings.storeInstagram || settings.storeFacebook || settings.storeTwitter) && (
-          <div>
-            <h3 style={{
-              margin: '0 0 12px 0',
-              fontSize: '16px',
-              fontWeight: '600',
-              color: '#2D8CFF'
-            }}>
-              Media Sosial
-            </h3>
-            {settings.storeInstagram && (
-              <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#9CA3AF' }}>
-                📷 Instagram: {settings.storeInstagram}
-              </p>
-            )}
-            {settings.storeFacebook && (
-              <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#9CA3AF' }}>
-                📘 Facebook: {settings.storeFacebook}
-              </p>
-            )}
-            {settings.storeTwitter && (
-              <p style={{ margin: '0', fontSize: '14px', color: '#9CA3AF' }}>
-                🐦 Twitter: {settings.storeTwitter}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div style={{
-        borderTop: '1px solid #374151',
-        marginTop: '24px',
-        paddingTop: '16px',
-        textAlign: 'center',
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '16px',
         fontSize: '12px',
         color: '#6B7280'
       }}>
-        © {new Date().getFullYear()} {settings.storeName || 'POS System'}. All rights reserved.
+        {settings.storeName && (
+          <span style={{ fontWeight: '500', color: '#374151' }}>
+            {settings.storeName}
+          </span>
+        )}
+        
+        {infoParts.length > 0 && (
+          <span style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {infoParts.map((part, index) => (
+              <span key={index}>{part}</span>
+            ))}
+          </span>
+        )}
+
+        {socialParts.length > 0 && (
+          <span style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {socialParts.map((part, index) => (
+              <span key={index}>{part}</span>
+            ))}
+          </span>
+        )}
       </div>
     </footer>
   );
