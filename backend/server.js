@@ -792,11 +792,22 @@ app.delete('/api/users/:id', auth, rbac.requirePermission('users:delete'), async
   }
 });
 
-// Get all roles
+// Get all roles - also creates missing roles if needed
 app.get('/api/roles', auth, rbac.requirePermission('users:read'), async (req, res) => {
   console.log('DEBUG - Get roles called');
   try {
+    // Ensure all required roles exist
+    const requiredRoles = ['Admin', 'Manager', 'Cashier'];
+    for (const roleName of requiredRoles) {
+      const existingRole = await Role.findOne({ where: { name: roleName } });
+      if (!existingRole) {
+        console.log('DEBUG - Creating missing role:', roleName);
+        await Role.create({ name: roleName });
+      }
+    }
+    
     const roles = await Role.findAll();
+    console.log('DEBUG - Returning roles:', roles.map(r => r.name));
     res.json(roles);
   } catch (error) {
     console.error('Get roles error:', error);
