@@ -92,8 +92,8 @@ const initDatabase = async () => {
 // Seed initial data
 const seedInitialData = async () => {
   try {
-    // Create roles
-const roles = await Role.bulkCreate([
+// Create roles
+    const roles = await Role.bulkCreate([
       { name: 'Admin' },
       { name: 'Manager' },
       { name: 'Cashier' }
@@ -800,9 +800,12 @@ app.get('/api/roles', auth, rbac.requirePermission('users:read'), async (req, re
     const kasirRole = await Role.findOne({ where: { name: 'Kasir' } });
     if (kasirRole) {
       console.log('DEBUG - Removing duplicate Kasir role');
-      // Update users with Kasir role to Cashier
-      await User.update({ roleId: null }, { where: { roleId: kasirRole.id } });
-      // Delete the Kasir role
+      // First reassign users to a valid role (Cashier) if it exists
+      const cashierRole = await Role.findOne({ where: { name: 'Cashier' } });
+      if (cashierRole) {
+        await User.update({ roleId: cashierRole.id }, { where: { roleId: kasirRole.id } });
+      }
+      // Then delete the Kasir role
       await kasirRole.destroy();
     }
     
