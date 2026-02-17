@@ -46,10 +46,14 @@ const Footer = () => {
 
   return (
     <footer style={{
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
       backgroundColor: '#F9FAFB',
       borderTop: '1px solid #E5E7EB',
-      padding: '12px 24px',
-      marginTop: 'auto'
+      padding: '8px 24px',
+      zIndex: 100
     }}>
       <div style={{
         maxWidth: '1200px',
@@ -59,7 +63,7 @@ const Footer = () => {
         justifyContent: 'center',
         alignItems: 'center',
         gap: '16px',
-        fontSize: '12px',
+        fontSize: '11px',
         color: '#6B7280'
       }}>
         {settings.storeName && (
