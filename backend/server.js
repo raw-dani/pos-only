@@ -530,20 +530,7 @@ app.get('/api/reports/sales/pdf', auth, rbac.requirePermission('reports:export')
 
     console.log('DEBUG - PDF export, found invoices:', invoices.length);
 
-    const doc = new PDFDocument();
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="sales-report.pdf"');
-
-    doc.pipe(res);
-    doc.fontSize(20).text('Sales Report', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12).text(`Generated on: ${new Date().toLocaleString()}`);
-    if (startDate && endDate) {
-      doc.text(`Period: ${startDate} to ${endDate}`);
-    }
-    doc.moveDown();
-
-// Get store settings for header
+    // Get store settings
     const settings = await Setting.findOne();
     const storeName = settings?.storeName || 'Toko Saya';
     const storeAddress = settings?.storeAddress || '';
@@ -559,99 +546,104 @@ app.get('/api/reports/sales/pdf', auth, rbac.requirePermission('reports:export')
       totalItems += invoice.items?.length || 0;
     });
 
-    // Header with store info
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="sales-report.pdf"');
+    doc.pipe(res);
+
+    // Header - Store Name
     doc.fontSize(22).fillColor('#2D8CFF').text(storeName, { align: 'center' });
-    doc.moveDown(0.5);
+    doc.moveDown(0.3);
+    
+    // Store Address & Phone
     doc.fontSize(10).fillColor('#666666');
     if (storeAddress) doc.text(storeAddress, { align: 'center' });
     if (storePhone) doc.text(`Telp: ${storePhone}`, { align: 'center' });
     doc.moveDown();
-    doc.fillColor('#000000');
 
-    // Report title
-    doc.fontSize(18).text('LAPORAN PENJUALAN', { align: 'center' });
-    doc.moveDown(0.5);
+    // Report Title
+    doc.fontSize(16).fillColor('#1F2937').text('LAPORAN PENJUALAN', { align: 'center' });
+    doc.moveDown(0.3);
     
-    // Date range
+    // Date Range
     doc.fontSize(10).fillColor('#666666');
     if (startDate && endDate) {
-      doc.text(`Periode: ${new Date(startDate).toLocaleDateString('id-ID')} - ${new Date(endDate).toLocaleDateString('id-ID')}`, { align: 'center' });
+      doc.text(`Periode: ${new Date(startDate).toLocaleDateString('id-ID')} s/d ${new Date(endDate).toLocaleDateString('id-ID')}`, { align: 'center' });
     } else {
       doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`, { align: 'center' });
     }
-    doc.moveDown(2);
+    doc.moveDown();
 
-    // Summary box
-    const summaryY = doc.y;
-    doc.rect(50, summaryY, 250, 60).fillAndStroke('#F3F4F6', '#E5E7EB');
-    doc.fillColor('#1F2937').fontSize(11);
-    doc.text('Ringkasan', 60, summaryY + 8);
-    doc.fontSize(10).fillColor('#666666');
-    doc.text(`Total Transaksi: ${invoices.length}`, 60, summaryY + 25);
-    doc.text(`Total Item: ${totalItems}`, 60, summaryY + 40);
-    doc.fontSize(11).fillColor('#1F2937');
-    doc.text(`Total Penjualan: Rp ${(totalSales + totalTax).toLocaleString('id-ID')}`, 300, summaryY + 8);
+    // Summary Box
+    const boxY = doc.y;
+    doc.rect(50, boxY, 250, 55).fillAndStroke('#F3F4F6', '#E5E7EB');
+    doc.fillColor('#1F2937').fontSize(10);
+    doc.text('Ringkasan', 58, boxY + 5);
+    doc.fontSize(9).fillColor('#666666');
+    doc.text(`Total Transaksi: ${invoices.length}`, 58, boxY + 20);
+    doc.text(`Total Item: ${totalItems}`, 58, boxY + 32);
+    doc.fontSize(10).fillColor('#1F2937');
+    doc.text(`Total: Rp ${(totalSales + totalTax).toLocaleString('id-ID')}`, 300, boxY + 5);
     if (totalTax > 0) {
-      doc.fontSize(10).fillColor('#EF4444');
-      doc.text(`(Termasuk Pajak: Rp ${totalTax.toLocaleString('id-ID')})`, 300, summaryY + 25);
+      doc.fontSize(9).fillColor('#EF4444');
+      doc.text(`Pajak: Rp ${totalTax.toLocaleString('id-ID')}`, 300, boxY + 20);
     }
-    doc.moveDown(10);
+    doc.moveDown(8);
 
-    // Table header
+    // Table Header
     const tableTop = doc.y;
-    doc.rect(50, tableTop, 500, 25).fill('#2D8CFF');
-    doc.fillColor('#FFFFFF').fontSize(10);
-    doc.text('No.', 55, tableTop + 8);
-    doc.text('Invoice', 90, tableTop + 8);
-    doc.text('Kasir', 180, tableTop + 8);
-    doc.text('Tanggal', 260, tableTop + 8);
-    doc.text('Subtotal', 340, tableTop + 8, { width: 80, align: 'right' });
-    doc.text('Pajak', 420, tableTop + 8, { width: 60, align: 'right' });
-    doc.text('Total', 480, tableTop + 8, { width: 70, align: 'right' });
+    doc.rect(50, tableTop, 500, 22).fill('#2D8CFF');
+    doc.fillColor('#FFFFFF').fontSize(9);
+    doc.text('No.', 52, tableTop + 6);
+    doc.text('Invoice', 75, tableTop + 6);
+    doc.text('Kasir', 160, tableTop + 6);
+    doc.text('Tgl', 230, tableTop + 6);
+    doc.text('Subtotal', 350, tableTop + 6, { width: 70, align: 'right' });
+    doc.text('Pajak', 420, tableTop + 6, { width: 55, align: 'right' });
+    doc.text('Total', 475, tableTop + 6, { width: 75, align: 'right' });
 
-    // Table rows
-    let y = tableTop + 30;
-    doc.fillColor('#1F2937');
+    // Table Rows
+    let rowY = tableTop + 22;
+    doc.fillColor('#1F2937').fontSize(8);
     
     invoices.forEach((invoice, index) => {
-      // Alternating row background
       if (index % 2 === 0) {
-        doc.rect(50, y - 5, 500, 20).fill('#F9FAFB');
+        doc.rect(50, rowY, 500, 16).fill('#F9FAFB');
       }
       
-      doc.fontSize(9).text(`${index + 1}.`, 55, y);
-      doc.text(invoice.invoiceNumber || `#${invoice.id}`, 90, y);
-      doc.text(invoice.cashier?.name || 'Kasir', 180, y);
-      doc.text(new Date(invoice.createdAt).toLocaleDateString('id-ID'), 260, y);
-      doc.text(`Rp ${parseFloat(invoice.subtotal || 0).toLocaleString('id-ID')}`, 340, y, { width: 80, align: 'right' });
-      doc.text(invoice.tax > 0 ? `Rp ${parseFloat(invoice.tax || 0).toLocaleString('id-ID')}` : '-', 420, y, { width: 60, align: 'right' });
-      doc.text(`Rp ${parseFloat(invoice.total || 0).toLocaleString('id-ID')}`, 480, y, { width: 70, align: 'right' });
+      doc.fillColor('#1F2937');
+      doc.text(String(index + 1), 52, rowY + 4);
+      doc.text(invoice.invoiceNumber || `#${invoice.id}`, 75, rowY + 4);
+      doc.text(invoice.cashier?.name || 'Kasir', 160, rowY + 4);
+      doc.text(new Date(invoice.createdAt).toLocaleDateString('id-ID'), 230, rowY + 4);
+      doc.text(`Rp ${parseFloat(invoice.subtotal || 0).toLocaleString('id-ID')}`, 350, rowY + 4, { width: 70, align: 'right' });
+      doc.text(invoice.tax > 0 ? `Rp ${parseFloat(invoice.tax || 0).toLocaleString('id-ID')}` : '-', 420, rowY + 4, { width: 55, align: 'right' });
+      doc.text(`Rp ${parseFloat(invoice.total || 0).toLocaleString('id-ID')}`, 475, rowY + 4, { width: 75, align: 'right' });
       
-      y += 20;
+      rowY += 16;
       
-      // Add new page if needed
-      if (y > 700) {
+      if (rowY > 700) {
         doc.addPage();
-        y = 50;
+        rowY = 50;
       }
     });
 
-    // Total row
-    y += 5;
-    doc.rect(50, y, 500, 25).fill('#2D8CFF');
-    doc.fillColor('#FFFFFF').fontSize(10);
-    doc.text('', 55, y + 8);
-    doc.text('', 90, y + 8);
-    doc.text('', 180, y + 8);
-    doc.text('TOTAL', 260, y + 8);
-    doc.text(`Rp ${totalSales.toLocaleString('id-ID')}`, 340, y + 8, { width: 80, align: 'right' });
-    doc.text(`Rp ${totalTax.toLocaleString('id-ID')}`, 420, y + 8, { width: 60, align: 'right' });
-    doc.text(`Rp ${(totalSales + totalTax).toLocaleString('id-ID')}`, 480, y + 8, { width: 70, align: 'right' });
+    // Total Row
+    rowY += 3;
+    doc.rect(50, rowY, 500, 20).fill('#2D8CFF');
+    doc.fillColor('#FFFFFF').fontSize(9);
+    doc.text('', 52, rowY + 5);
+    doc.text('', 75, rowY + 5);
+    doc.text('', 160, rowY + 5);
+    doc.text('TOTAL', 230, rowY + 5);
+    doc.text(`Rp ${totalSales.toLocaleString('id-ID')}`, 350, rowY + 5, { width: 70, align: 'right' });
+    doc.text(`Rp ${totalTax.toLocaleString('id-ID')}`, 420, rowY + 5, { width: 55, align: 'right' });
+    doc.text(`Rp ${(totalSales + totalTax).toLocaleString('id-ID')}`, 475, rowY + 5, { width: 75, align: 'right' });
 
     // Footer
-    doc.addPage();
+    doc.moveDown(3);
     doc.fontSize(8).fillColor('#999999');
-    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')} - ${storeName}`, 50, 750, { align: 'center' });
+    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')} - ${storeName}`, { align: 'center' });
     
     doc.end();
 
