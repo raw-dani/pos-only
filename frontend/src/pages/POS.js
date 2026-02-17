@@ -13,10 +13,11 @@ const POS = () => {
   const [cart, setCart] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [currentInvoice, setCurrentInvoice] = useState(null);
+const [currentInvoice, setCurrentInvoice] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
-const [pendingOrders, setPendingOrders] = useState([]);
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [storeSettings, setStoreSettings] = useState(null);
   const [showPendingOrders, setShowPendingOrders] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -118,7 +119,7 @@ const [pendingOrders, setPendingOrders] = useState([]);
   };
 
   useEffect(() => {
-    const fetchData = async () => {
+const fetchData = async () => {
       try {
         // Fetch products
         const productsRes = await axios.get(`${API_BASE_URL}/api/products`, {
@@ -131,6 +132,16 @@ const [pendingOrders, setPendingOrders] = useState([]);
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setCategories(categoriesRes.data);
+
+        // Fetch store settings
+        try {
+          const settingsRes = await axios.get(`${API_BASE_URL}/api/settings`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          });
+          setStoreSettings(settingsRes.data);
+        } catch (settingsErr) {
+          console.error('Error fetching settings:', settingsErr);
+        }
       } catch (err) {
         console.error('Error fetching data:', err);
       }
@@ -300,8 +311,14 @@ const [pendingOrders, setPendingOrders] = useState([]);
     printWindow.print();
   };
 
-  const generateInvoiceHTML = (invoice) => {
+const generateInvoiceHTML = (invoice) => {
     const total = invoice.items.reduce((sum, item) => sum + Number(item.total), 0);
+    
+    // Get store info from settings
+    const storeName = storeSettings?.storeName || 'Toko Saya';
+    const storeAddress = storeSettings?.storeAddress || '';
+    const storePhone = storeSettings?.storePhone || '';
+    const storeWhatsApp = storeSettings?.storeWhatsApp || '';
     
     let itemsHTML = '';
     invoice.items.forEach(item => {
@@ -314,49 +331,62 @@ const [pendingOrders, setPendingOrders] = useState([]);
       itemsHTML += '</tr>';
     });
 
+    // Build store info section
+    let storeInfoHTML = '';
+    if (storeName) storeInfoHTML += '<div class="store-name">' + storeName + '</div>';
+    if (storeAddress) storeInfoHTML += '<div class="store-address">' + storeAddress + '</div>';
+    if (storePhone) storeInfoHTML += '<div class="store-phone">📞 ' + storePhone + '</div>';
+    if (storeWhatsApp) storeInfoHTML += '<div class="store-whatsapp">💬 ' + storeWhatsApp + '</div>';
+
     return '<!DOCTYPE html><html><head><title>Invoice #' + invoice.id + '</title><style>' +
-      '@page { margin: 20mm; }' +
-      'body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; color: #1F2937; line-height: 1.6; }' +
-      '.invoice-container { max-width: 800px; margin: 0 auto; border: 2px solid #E5E7EB; border-radius: 12px; overflow: hidden; position: relative; }' +
-      '.paid-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 120px; font-weight: 900; color: rgba(16, 185, 129, 0.1); z-index: 1; pointer-events: none; user-select: none; }' +
-      '.header { background: linear-gradient(135deg, #2D8CFF 0%, #1A73E8 100%); color: white; padding: 30px; text-align: center; }' +
-      '.header h1 { margin: 0; font-size: 28px; font-weight: 700; }' +
-      '.header h2 { margin: 10px 0 0 0; font-size: 18px; font-weight: 400; opacity: 0.9; }' +
-      '.invoice-details { padding: 30px; background: #F9FAFB; border-bottom: 1px solid #E5E7EB; }' +
-      '.details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }' +
-      '.detail-item { display: flex; justify-content: space-between; align-items: center; }' +
-      '.detail-label { font-weight: 600; color: #6B7280; }' +
-      '.detail-value { font-weight: 500; color: #1F2937; }' +
-      '.status-badge { padding: 8px 16px; border-radius: 25px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); border: 2px solid; }' +
-      '.status-paid { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; border-color: #047857; }' +
-      '.items-section { padding: 30px; }' +
-      '.section-title { font-size: 20px; font-weight: 600; margin-bottom: 20px; color: #1F2937; }' +
-      'table { width: 100%; border-collapse: collapse; margin-bottom: 30px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-radius: 8px; overflow: hidden; }' +
+      '@page { margin: 15mm; }' +
+      'body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 15px; color: #1F2937; line-height: 1.5; }' +
+      '.invoice-container { max-width: 400px; margin: 0 auto; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden; position: relative; }' +
+      '.paid-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 80px; font-weight: 900; color: rgba(16, 185, 129, 0.1); z-index: 1; pointer-events: none; user-select: none; }' +
+      '.header { background: #FFFFFF; color: #1F2937; padding: 20px; text-align: center; border-bottom: 1px dashed #E5E7EB; }' +
+      '.store-name { font-size: 20px; font-weight: 700; color: #2D8CFF; margin-bottom: 4px; }' +
+      '.store-address { font-size: 12px; color: #6B7280; margin-bottom: 2px; }' +
+      '.store-phone, .store-whatsapp { font-size: 11px; color: #6B7280; }' +
+      '.invoice-number { font-size: 14px; font-weight: 600; color: #1F2937; margin-top: 12px; }' +
+      '.invoice-details { padding: 15px 20px; background: #F9FAFB; border-bottom: 1px dashed #E5E7EB; }' +
+      '.details-grid { display: flex; justify-content: space-between; font-size: 12px; }' +
+      '.detail-label { color: #6B7280; }' +
+      '.detail-value { color: #1F2937; font-weight: 500; }' +
+      '.status-badge { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }' +
+      '.status-paid { background: #D1FAE5; color: #065F46; }' +
+      '.status-pending { background: #FEF3C7; color: #92400E; }' +
+      '.items-section { padding: 15px 20px; }' +
+      'table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }' +
       'thead { background: #F3F4F6; }' +
-      'th { padding: 15px 20px; text-align: left; font-weight: 600; color: #374151; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }' +
-      'td { padding: 15px 20px; border-bottom: 1px solid #E5E7EB; font-size: 14px; }' +
+      'th { padding: 8px 6px; text-align: left; font-weight: 600; color: #374151; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #E5E7EB; }' +
+      'th:nth-child(2), th:nth-child(3), th:nth-child(4) { text-align: right; }' +
+      'td { padding: 8px 6px; border-bottom: 1px solid #F3F4F6; font-size: 12px; }' +
+      'td:nth-child(2), td:nth-child(3), td:nth-child(4) { text-align: right; }' +
       '.product-name { font-weight: 500; color: #1F2937; }' +
-      '.quantity { text-align: center; font-weight: 600; }' +
-      '.price { text-align: right; font-weight: 500; }' +
-      '.total-section { padding: 30px; background: #F9FAFB; border-top: 2px solid #E5E7EB; }' +
-      '.total-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; }' +
-      '.total-label { font-size: 18px; font-weight: 600; color: #374151; }' +
-      '.total-amount { font-size: 24px; font-weight: 700; color: #059669; }' +
-      '.footer { text-align: center; padding: 20px; background: #F3F4F6; color: #6B7280; font-size: 12px; }' +
+      '.quantity { text-align: center; }' +
+      '.price { text-align: right; }' +
+      '.total-section { padding: 15px 20px; background: #F9FAFB; border-top: 2px solid #E5E7EB; }' +
+      '.total-row { display: flex; justify-content: space-between; align-items: center; }' +
+      '.total-label { font-size: 14px; font-weight: 600; color: #374151; }' +
+      '.total-amount { font-size: 18px; font-weight: 700; color: #059669; }' +
+      '.footer { text-align: center; padding: 15px; background: #F3F4F6; color: #6B7280; font-size: 10px; }' +
       '@media print { body { margin: 0; } .invoice-container { border: none; } }' +
       '</style></head><body>' +
       '<div class="invoice-container">' +
       (invoice.status === 'paid' ? '<div class="paid-watermark">PAID</div>' : '') +
-      '<div class="header"><h1>POS Invoice System</h1><h2>Invoice #' + invoice.id + '</h2></div>' +
+      '<div class="header">' +
+      storeInfoHTML +
+      '<div class="invoice-number">Invoice #' + invoice.id + '</div>' +
+      '</div>' +
       '<div class="invoice-details"><div class="details-grid">' +
-      '<div class="detail-item"><span class="detail-label">Date:</span><span class="detail-value">' + new Date(invoice.createdAt).toLocaleString('id-ID') + '</span></div>' +
-      '<div class="detail-item"><span class="detail-label">Status:</span><span class="status-badge status-paid">✓ ' + invoice.status.toUpperCase() + '</span></div>' +
+      '<div><span class="detail-label">Date:</span> <span class="detail-value">' + new Date(invoice.createdAt).toLocaleDateString('id-ID') + '</span></div>' +
+      '<div><span class="status-badge ' + (invoice.status === 'paid' ? 'status-paid' : 'status-pending') + '">' + invoice.status.toUpperCase() + '</span></div>' +
       '</div></div>' +
-      '<div class="items-section"><h3 class="section-title">Items Purchased</h3><table><thead><tr><th>Product Name</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Total</th></tr></thead><tbody>' +
+      '<div class="items-section"><table><thead><tr><th>Item</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>' +
       itemsHTML +
       '</tbody></table></div>' +
-      '<div class="total-section"><div class="total-row"><span class="total-label">Total Amount:</span><span class="total-amount">Rp ' + total.toLocaleString('id-ID') + '</span></div></div>' +
-      '<div class="footer"><p>Thank you for your business!</p><p>Generated on ' + new Date().toLocaleString('id-ID') + '</p></div>' +
+      '<div class="total-section"><div class="total-row"><span class="total-label">Total:</span><span class="total-amount">Rp ' + total.toLocaleString('id-ID') + '</span></div></div>' +
+      '<div class="footer"><p>Terima kasih atas kunjungan Anda!</p></div>' +
       '</div></body></html>';
   };
 
