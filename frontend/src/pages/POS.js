@@ -20,7 +20,8 @@ const [currentInvoice, setCurrentInvoice] = useState(null);
 const [storeSettings, setStoreSettings] = useState(null);
   const [showPendingOrders, setShowPendingOrders] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [invoiceSize, setInvoiceSize] = useState('thermal'); // 'thermal' or 'a4'
+const [invoiceSize, setInvoiceSize] = useState('thermal'); // 'thermal' or 'a4'
+  const [searchQuery, setSearchQuery] = useState('');
 
 // Storage helper functions with fallbacks
   const storage = {
@@ -202,10 +203,15 @@ const fetchData = async () => {
     setTotal(newCart.reduce((sum, item) => sum + parseFloat(item.price), 0));
   };
 
-  // Filter products based on selected category and active status
-  const filteredProducts = selectedCategory
-    ? products.filter(product => parseInt(product.categoryId) === parseInt(selectedCategory) && product.isActive)
-    : products.filter(product => product.isActive);
+// Filter products based on selected category, search query, and active status
+  const filteredProducts = products.filter(product => {
+    const isActive = product.isActive;
+    const matchesCategory = selectedCategory ? parseInt(product.categoryId) === parseInt(selectedCategory) : true;
+    const matchesSearch = searchQuery 
+      ? product.name.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+    return isActive && matchesCategory && matchesSearch;
+  });
 
   const createInvoice = async () => {
     if (cart.length === 0) {
@@ -552,7 +558,7 @@ const generateInvoiceHTML = (invoice) => {
               alignItems: 'center',
               marginBottom: '20px'
             }}>
-              <h2 style={{
+<h2 style={{
                 color: '#1F2937',
                 margin: '0',
                 fontSize: '20px',
@@ -560,13 +566,66 @@ const generateInvoiceHTML = (invoice) => {
               }}>
                 Products ({filteredProducts.length})
               </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                {/* Search Input */}
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      padding: '8px 12px 8px 36px',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      color: '#1F2937',
+                      backgroundColor: '#FFFFFF',
+                      outline: 'none',
+                      width: '200px',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#2D8CFF'}
+                    onBlur={(e) => e.target.style.borderColor = '#E5E7EB'}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    fontSize: '14px'
+                  }}>🔍</span>
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        backgroundColor: '#EF4444',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '18px',
+                        height: '18px',
+                        fontSize: '10px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
                 <label style={{
                   color: '#1F2937',
                   fontSize: '14px',
                   fontWeight: '500'
                 }}>
-                  Filter by Category:
+                  Category:
                 </label>
                 <select
                   value={selectedCategory}
