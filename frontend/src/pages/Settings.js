@@ -4,7 +4,7 @@ import API_BASE_URL from '../utils/api';
 import { getUserRole, isAdmin } from '../utils/auth';
 
 const Settings = () => {
-  const [settings, setSettings] = useState({
+const [settings, setSettings] = useState({
     storeName: '',
     storeAddress: '',
     storePhone: '',
@@ -14,7 +14,7 @@ const Settings = () => {
     storeFacebook: '',
     storeTwitter: '',
     taxRate: 0,
-    currency: 'IDR'
+    taxEnabled: false
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -417,7 +417,7 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* Tax & Currency */}
+{/* Tax Settings */}
           <div style={{
             backgroundColor: '#FFFFFF',
             padding: '24px',
@@ -433,61 +433,68 @@ const Settings = () => {
               borderBottom: '1px solid #E5E7EB',
               paddingBottom: '12px'
             }}>
-              💰 Tax & Currency
+              💰 Tax Settings
             </h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '500' }}>
-                  Tax Rate (%)
-                </label>
-                <input
-                  type="number"
-                  name="taxRate"
-                  value={settings.taxRate}
-                  onChange={handleChange}
-                  step="0.01"
-                  min="0"
-                  max="100"
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <div
+                  onClick={() => setSettings(prev => ({ ...prev, taxEnabled: !prev.taxEnabled }))}
                   style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                  placeholder="0"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '500' }}>
-                  Currency
-                </label>
-                <select
-                  name="currency"
-                  value={settings.currency}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: '1px solid #E5E7EB',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    backgroundColor: '#FFFFFF'
+                    width: '48px',
+                    height: '24px',
+                    backgroundColor: settings.taxEnabled ? '#10B981' : '#D1D5DB',
+                    borderRadius: '24px',
+                    position: 'relative',
+                    transition: 'background-color 0.2s',
+                    cursor: 'pointer'
                   }}
                 >
-                  <option value="IDR">IDR (Indonesian Rupiah)</option>
-                  <option value="USD">USD (US Dollar)</option>
-                  <option value="EUR">EUR (Euro)</option>
-                  <option value="MYR">MYR (Malaysian Ringgit)</option>
-                  <option value="SGD">SGD (Singapore Dollar)</option>
-                </select>
-              </div>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '50%',
+                    position: 'absolute',
+                    top: '2px',
+                    left: settings.taxEnabled ? '26px' : '2px',
+                    transition: 'left 0.2s',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                  }} />
+                </div>
+                <span style={{ marginLeft: '12px', fontWeight: '500', color: '#374151' }}>
+                  Enable Tax
+                </span>
+              </label>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '500' }}>
+                Tax Rate (%)
+              </label>
+              <input
+                type="number"
+                name="taxRate"
+                value={settings.taxRate}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                max="100"
+                disabled={!settings.taxEnabled}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  backgroundColor: settings.taxEnabled ? '#FFFFFF' : '#F3F4F6',
+                  color: settings.taxEnabled ? '#1F2937' : '#9CA3AF',
+                  cursor: settings.taxEnabled ? 'auto' : 'not-allowed'
+                }}
+                placeholder="0"
+              />
             </div>
           </div>
 

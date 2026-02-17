@@ -40,13 +40,13 @@ const Setting = sequelize.define('Setting', {
     type: DataTypes.STRING,
     defaultValue: ''
   },
-  taxRate: {
+taxRate: {
     type: DataTypes.DECIMAL(5, 2),
     defaultValue: 0
   },
-  currency: {
-    type: DataTypes.STRING,
-    defaultValue: 'IDR'
+  taxEnabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   invoiceTemplate: {
     type: DataTypes.TEXT

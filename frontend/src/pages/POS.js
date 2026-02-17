@@ -22,6 +22,7 @@ const [storeSettings, setStoreSettings] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
 const [invoiceSize, setInvoiceSize] = useState('thermal'); // 'thermal' or 'a4'
   const [searchQuery, setSearchQuery] = useState('');
+  const [taxInfo, setTaxInfo] = useState({ taxRate: 0, taxEnabled: false });
 
 // Storage helper functions with fallbacks
   const storage = {
@@ -135,12 +136,17 @@ const fetchData = async () => {
         });
         setCategories(categoriesRes.data);
 
-        // Fetch store settings
+// Fetch store settings
         try {
           const settingsRes = await axios.get(`${API_BASE_URL}/api/settings`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
           });
           setStoreSettings(settingsRes.data);
+          // Set tax info
+          setTaxInfo({
+            taxRate: settingsRes.data.taxRate || 0,
+            taxEnabled: settingsRes.data.taxEnabled || false
+          });
         } catch (settingsErr) {
           console.error('Error fetching settings:', settingsErr);
         }
@@ -571,7 +577,7 @@ const generateInvoiceHTML = (invoice) => {
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
-                    placeholder="🔍 Search products..."
+                    placeholder="Search products..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{
@@ -905,7 +911,7 @@ const generateInvoiceHTML = (invoice) => {
               )}
             </div>
 
-            {cart.length > 0 && (
+{cart.length > 0 && (
               <>
                 <div style={{
                   borderTop: '1px solid #E5E7EB',
@@ -916,11 +922,33 @@ const generateInvoiceHTML = (invoice) => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    marginBottom: '8px'
+                  }}>
+                    <span style={{ color: '#6B7280' }}>Subtotal:</span>
+                    <span style={{ color: '#1F2937' }}>Rp {parseFloat(total).toLocaleString('id-ID')}</span>
+                  </div>
+                  {taxInfo.taxEnabled && taxInfo.taxRate > 0 && (
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '8px'
+                    }}>
+                      <span style={{ color: '#6B7280' }}>Tax ({taxInfo.taxRate}%):</span>
+                      <span style={{ color: '#EF4444' }}>Rp {parseFloat(total * taxInfo.taxRate / 100).toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     fontSize: '18px',
                     fontWeight: 'bold'
                   }}>
                     <span style={{ color: '#1F2937' }}>Total:</span>
-                    <span style={{ color: '#10B981' }}>Rp {parseFloat(total).toLocaleString('id-ID')}</span>
+                    <span style={{ color: '#10B981' }}>
+                      Rp {parseFloat(taxInfo.taxEnabled ? total + (total * taxInfo.taxRate / 100) : total).toLocaleString('id-ID')}
+                    </span>
                   </div>
                 </div>
 

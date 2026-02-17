@@ -570,7 +570,7 @@ app.get('/api/settings', auth, rbac.requirePermission('settings:read'), async (r
     // Create default settings if not exist
     if (!setting) {
       console.log('DEBUG - Creating default settings...');
-      setting = await Setting.create({
+setting = await Setting.create({
         storeName: 'Toko Saya',
         storeAddress: '',
         storePhone: '',
@@ -580,7 +580,7 @@ app.get('/api/settings', auth, rbac.requirePermission('settings:read'), async (r
         storeFacebook: '',
         storeTwitter: '',
         taxRate: 0,
-        currency: 'IDR'
+        taxEnabled: false
       });
       console.log('DEBUG - Default settings created:', setting);
     }
