@@ -17,9 +17,10 @@ const [currentInvoice, setCurrentInvoice] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const [pendingOrders, setPendingOrders] = useState([]);
-  const [storeSettings, setStoreSettings] = useState(null);
+const [storeSettings, setStoreSettings] = useState(null);
   const [showPendingOrders, setShowPendingOrders] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [invoiceSize, setInvoiceSize] = useState('thermal'); // 'thermal' or 'a4'
 
 // Storage helper functions with fallbacks
   const storage = {
@@ -318,7 +319,6 @@ const generateInvoiceHTML = (invoice) => {
     const storeName = storeSettings?.storeName || 'Toko Saya';
     const storeAddress = storeSettings?.storeAddress || '';
     const storePhone = storeSettings?.storePhone || '';
-    const storeWhatsApp = storeSettings?.storeWhatsApp || '';
     
     let itemsHTML = '';
     invoice.items.forEach(item => {
@@ -336,40 +336,53 @@ const generateInvoiceHTML = (invoice) => {
     if (storeName) storeInfoHTML += '<div class="store-name">' + storeName + '</div>';
     if (storeAddress) storeInfoHTML += '<div class="store-address">' + storeAddress + '</div>';
     if (storePhone) storeInfoHTML += '<div class="store-phone">📞 ' + storePhone + '</div>';
-    if (storeWhatsApp) storeInfoHTML += '<div class="store-whatsapp">💬 ' + storeWhatsApp + '</div>';
 
+    // Different styles based on invoice size
+    const isThermal = invoiceSize === 'thermal';
+    
+    const containerStyle = isThermal 
+      ? 'max-width: 280px; margin: 0 auto; border: none; border-radius: 0;'
+      : 'max-width: 700px; margin: 0 auto; border: 2px solid #E5E7EB; border-radius: 12px; overflow: hidden;';
+    
+    const padding = isThermal ? '10px' : '30px';
+    const fontSize = isThermal ? '10px' : '12px';
+    const headerPadding = isThermal ? '15px' : '30px';
+    const storeNameSize = isThermal ? '16px' : '24px';
+    const invoiceNumberSize = isThermal ? '12px' : '16px';
+    const itemPadding = isThermal ? '6px 4px' : '12px 10px';
+    
     return '<!DOCTYPE html><html><head><title>Invoice #' + invoice.id + '</title><style>' +
-      '@page { margin: 15mm; }' +
-      'body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 15px; color: #1F2937; line-height: 1.5; }' +
-      '.invoice-container { max-width: 400px; margin: 0 auto; border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden; position: relative; }' +
-      '.paid-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 80px; font-weight: 900; color: rgba(16, 185, 129, 0.1); z-index: 1; pointer-events: none; user-select: none; }' +
-      '.header { background: #FFFFFF; color: #1F2937; padding: 20px; text-align: center; border-bottom: 1px dashed #E5E7EB; }' +
-      '.store-name { font-size: 20px; font-weight: 700; color: #2D8CFF; margin-bottom: 4px; }' +
-      '.store-address { font-size: 12px; color: #6B7280; margin-bottom: 2px; }' +
-      '.store-phone, .store-whatsapp { font-size: 11px; color: #6B7280; }' +
-      '.invoice-number { font-size: 14px; font-weight: 600; color: #1F2937; margin-top: 12px; }' +
-      '.invoice-details { padding: 15px 20px; background: #F9FAFB; border-bottom: 1px dashed #E5E7EB; }' +
-      '.details-grid { display: flex; justify-content: space-between; font-size: 12px; }' +
+      '@page { margin: ' + (isThermal ? '5mm' : '15mm') + '; }' +
+      'body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: ' + padding + '; color: #1F2937; line-height: 1.5; background: #fff; }' +
+      '.invoice-container { ' + containerStyle + ' position: relative; }' +
+      '.paid-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: ' + (isThermal ? '50px' : '100px') + '; font-weight: 900; color: rgba(16, 185, 129, 0.1); z-index: 1; pointer-events: none; user-select: none; }' +
+      '.header { background: #FFFFFF; color: #1F2937; padding: ' + headerPadding + '; text-align: center; border-bottom: 1px ' + (isThermal ? 'solid' : 'dashed') + ' #E5E7EB; }' +
+      '.store-name { font-size: ' + storeNameSize + '; font-weight: 700; color: #2D8CFF; margin-bottom: 4px; }' +
+      '.store-address { font-size: ' + fontSize + '; color: #6B7280; margin-bottom: 2px; }' +
+      '.store-phone, .store-whatsapp { font-size: ' + fontSize + '; color: #6B7280; }' +
+      '.invoice-number { font-size: ' + invoiceNumberSize + '; font-weight: 600; color: #1F2937; margin-top: 8px; }' +
+      '.invoice-details { padding: ' + (isThermal ? '10px' : '20px') + '; background: #F9FAFB; border-bottom: 1px ' + (isThermal ? 'solid' : 'dashed') + ' #E5E7EB; }' +
+      '.details-grid { display: flex; justify-content: space-between; font-size: ' + fontSize + '; }' +
       '.detail-label { color: #6B7280; }' +
       '.detail-value { color: #1F2937; font-weight: 500; }' +
-      '.status-badge { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }' +
+      '.status-badge { padding: 2px 6px; border-radius: 4px; font-size: ' + (isThermal ? '8px' : '10px') + '; font-weight: 700; text-transform: uppercase; }' +
       '.status-paid { background: #D1FAE5; color: #065F46; }' +
       '.status-pending { background: #FEF3C7; color: #92400E; }' +
-      '.items-section { padding: 15px 20px; }' +
-      'table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }' +
+      '.items-section { padding: ' + (isThermal ? '10px' : '20px') + '; }' +
+      'table { width: 100%; border-collapse: collapse; margin-bottom: ' + (isThermal ? '10px' : '20px') + '; }' +
       'thead { background: #F3F4F6; }' +
-      'th { padding: 8px 6px; text-align: left; font-weight: 600; color: #374151; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #E5E7EB; }' +
+      'th { padding: ' + itemPadding + '; text-align: left; font-weight: 600; color: #374151; font-size: ' + fontSize + '; text-transform: uppercase; border-bottom: 1px solid #E5E7EB; }' +
       'th:nth-child(2), th:nth-child(3), th:nth-child(4) { text-align: right; }' +
-      'td { padding: 8px 6px; border-bottom: 1px solid #F3F4F6; font-size: 12px; }' +
+      'td { padding: ' + itemPadding + '; border-bottom: 1px solid #F3F4F6; font-size: ' + fontSize + '; }' +
       'td:nth-child(2), td:nth-child(3), td:nth-child(4) { text-align: right; }' +
       '.product-name { font-weight: 500; color: #1F2937; }' +
       '.quantity { text-align: center; }' +
       '.price { text-align: right; }' +
-      '.total-section { padding: 15px 20px; background: #F9FAFB; border-top: 2px solid #E5E7EB; }' +
+      '.total-section { padding: ' + (isThermal ? '10px' : '20px') + '; background: #F9FAFB; border-top: 2px solid #E5E7EB; }' +
       '.total-row { display: flex; justify-content: space-between; align-items: center; }' +
-      '.total-label { font-size: 14px; font-weight: 600; color: #374151; }' +
-      '.total-amount { font-size: 18px; font-weight: 700; color: #059669; }' +
-      '.footer { text-align: center; padding: 15px; background: #F3F4F6; color: #6B7280; font-size: 10px; }' +
+      '.total-label { font-size: ' + (isThermal ? '12px' : '16px') + '; font-weight: 600; color: #374151; }' +
+      '.total-amount { font-size: ' + (isThermal ? '14px' : '20px') + '; font-weight: 700; color: #059669; }' +
+      '.footer { text-align: center; padding: ' + (isThermal ? '10px' : '20px') + '; background: #F3F4F6; color: #6B7280; font-size: ' + fontSize + '; }' +
       '@media print { body { margin: 0; } .invoice-container { border: none; } }' +
       '</style></head><body>' +
       '<div class="invoice-container">' +
@@ -1402,7 +1415,7 @@ const generateInvoiceHTML = (invoice) => {
                 Close
               </button>
 
-              {currentInvoice.status === 'pending' ? (
+{currentInvoice.status === 'pending' ? (
                 <button
                   onClick={confirmPayment}
                   disabled={loading}
@@ -1423,24 +1436,59 @@ const generateInvoiceHTML = (invoice) => {
                   {loading ? 'Confirming...' : '💰 Confirm Payment'}
                 </button>
               ) : (
-                <button
-                  onClick={printInvoice}
-                  style={{
-                    padding: '12px 24px',
-                    backgroundColor: '#2D8CFF',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#1A73E8'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = '#2D8CFF'}
-                >
-                  🖨️ Print Invoice
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {/* Print Size Toggle */}
+                  <div style={{ display: 'flex', backgroundColor: '#F3F4F6', borderRadius: '6px', padding: '2px' }}>
+                    <button
+                      onClick={() => setInvoiceSize('thermal')}
+                      style={{
+                        padding: '8px 12px',
+                        backgroundColor: invoiceSize === 'thermal' ? '#2D8CFF' : 'transparent',
+                        color: invoiceSize === 'thermal' ? '#FFFFFF' : '#6B7280',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      🧾 80mm
+                    </button>
+                    <button
+                      onClick={() => setInvoiceSize('a4')}
+                      style={{
+                        padding: '8px 12px',
+                        backgroundColor: invoiceSize === 'a4' ? '#2D8CFF' : 'transparent',
+                        color: invoiceSize === 'a4' ? '#FFFFFF' : '#6B7280',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      📄 A4
+                    </button>
+                  </div>
+                  <button
+                    onClick={printInvoice}
+                    style={{
+                      padding: '12px 24px',
+                      backgroundColor: '#2D8CFF',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#1A73E8'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#2D8CFF'}
+                  >
+                    🖨️ Print Invoice
+                  </button>
+                </div>
               )}
             </div>
           </div>
