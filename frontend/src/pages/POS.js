@@ -19,21 +19,47 @@ const POS = () => {
   const [pendingOrders, setPendingOrders] = useState([]);
   const [showPendingOrders, setShowPendingOrders] = useState(false);
 
+// Storage helper functions with fallbacks
+  const storage = {
+    get: (key) => {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        console.error('localStorage get error:', e);
+        return null;
+      }
+    },
+    set: (key, value) => {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        console.error('localStorage set error:', e);
+      }
+    }
+  };
+
   // Load pending orders from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('pendingOrders');
+    console.log('[POS] Loading pending orders from localStorage...');
+    const saved = storage.get('pendingOrders');
+    console.log('[POS] Raw saved data:', saved);
     if (saved) {
       try {
-        setPendingOrders(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        console.log('[POS] Parsed pending orders:', parsed);
+        setPendingOrders(parsed);
       } catch (e) {
-        console.error('Error loading pending orders:', e);
+        console.error('[POS] Error loading pending orders:', e);
       }
+    } else {
+      console.log('[POS] No pending orders found in localStorage');
     }
   }, []);
 
   // Save pending orders to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('pendingOrders', JSON.stringify(pendingOrders));
+    console.log('[POS] Saving pending orders:', pendingOrders);
+    storage.set('pendingOrders', JSON.stringify(pendingOrders));
   }, [pendingOrders]);
 
   const saveAsPending = () => {
