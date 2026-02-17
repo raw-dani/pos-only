@@ -543,15 +543,116 @@ app.get('/api/reports/sales/pdf', auth, rbac.requirePermission('reports:export')
     }
     doc.moveDown();
 
-    // Add invoice details
+// Get store settings for header
+    const settings = await Setting.findOne();
+    const storeName = settings?.storeName || 'Toko Saya';
+    const storeAddress = settings?.storeAddress || '';
+    const storePhone = settings?.storePhone || '';
+
+    // Calculate totals
     let totalSales = 0;
-    invoices.forEach((invoice, index) => {
-      doc.fontSize(12).text(`Invoice #${invoice.invoiceNumber} - ${invoice.cashier?.name || 'N/A'} - Rp ${parseFloat(invoice.total || 0).toLocaleString('id-ID')} - ${invoice.status}`, { continued: false });
-      totalSales += parseFloat(invoice.total || 0);
+    let totalTax = 0;
+    let totalItems = 0;
+    invoices.forEach(invoice => {
+      totalSales += parseFloat(invoice.subtotal || 0);
+      totalTax += parseFloat(invoice.tax || 0);
+      totalItems += invoice.items?.length || 0;
     });
 
+    // Header with store info
+    doc.fontSize(22).fillColor('#2D8CFF').text(storeName, { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(10).fillColor('#666666');
+    if (storeAddress) doc.text(storeAddress, { align: 'center' });
+    if (storePhone) doc.text(`Telp: ${storePhone}`, { align: 'center' });
     doc.moveDown();
-    doc.fontSize(14).text(`Total Sales: Rp ${totalSales.toLocaleString('id-ID')}`, { bold: true });
+    doc.fillColor('#000000');
+
+    // Report title
+    doc.fontSize(18).text('LAPORAN PENJUALAN', { align: 'center' });
+    doc.moveDown(0.5);
+    
+    // Date range
+    doc.fontSize(10).fillColor('#666666');
+    if (startDate && endDate) {
+      doc.text(`Periode: ${new Date(startDate).toLocaleDateString('id-ID')} - ${new Date(endDate).toLocaleDateString('id-ID')}`, { align: 'center' });
+    } else {
+      doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`, { align: 'center' });
+    }
+    doc.moveDown(2);
+
+    // Summary box
+    const summaryY = doc.y;
+    doc.rect(50, summaryY, 250, 60).fillAndStroke('#F3F4F6', '#E5E7EB');
+    doc.fillColor('#1F2937').fontSize(11);
+    doc.text('Ringkasan', 60, summaryY + 8);
+    doc.fontSize(10).fillColor('#666666');
+    doc.text(`Total Transaksi: ${invoices.length}`, 60, summaryY + 25);
+    doc.text(`Total Item: ${totalItems}`, 60, summaryY + 40);
+    doc.fontSize(11).fillColor('#1F2937');
+    doc.text(`Total Penjualan: Rp ${(totalSales + totalTax).toLocaleString('id-ID')}`, 300, summaryY + 8);
+    if (totalTax > 0) {
+      doc.fontSize(10).fillColor('#EF4444');
+      doc.text(`(Termasuk Pajak: Rp ${totalTax.toLocaleString('id-ID')})`, 300, summaryY + 25);
+    }
+    doc.moveDown(10);
+
+    // Table header
+    const tableTop = doc.y;
+    doc.rect(50, tableTop, 500, 25).fill('#2D8CFF');
+    doc.fillColor('#FFFFFF').fontSize(10);
+    doc.text('No.', 55, tableTop + 8);
+    doc.text('Invoice', 90, tableTop + 8);
+    doc.text('Kasir', 180, tableTop + 8);
+    doc.text('Tanggal', 260, tableTop + 8);
+    doc.text('Subtotal', 340, tableTop + 8, { width: 80, align: 'right' });
+    doc.text('Pajak', 420, tableTop + 8, { width: 60, align: 'right' });
+    doc.text('Total', 480, tableTop + 8, { width: 70, align: 'right' });
+
+    // Table rows
+    let y = tableTop + 30;
+    doc.fillColor('#1F2937');
+    
+    invoices.forEach((invoice, index) => {
+      // Alternating row background
+      if (index % 2 === 0) {
+        doc.rect(50, y - 5, 500, 20).fill('#F9FAFB');
+      }
+      
+      doc.fontSize(9).text(`${index + 1}.`, 55, y);
+      doc.text(invoice.invoiceNumber || `#${invoice.id}`, 90, y);
+      doc.text(invoice.cashier?.name || 'Kasir', 180, y);
+      doc.text(new Date(invoice.createdAt).toLocaleDateString('id-ID'), 260, y);
+      doc.text(`Rp ${parseFloat(invoice.subtotal || 0).toLocaleString('id-ID')}`, 340, y, { width: 80, align: 'right' });
+      doc.text(invoice.tax > 0 ? `Rp ${parseFloat(invoice.tax || 0).toLocaleString('id-ID')}` : '-', 420, y, { width: 60, align: 'right' });
+      doc.text(`Rp ${parseFloat(invoice.total || 0).toLocaleString('id-ID')}`, 480, y, { width: 70, align: 'right' });
+      
+      y += 20;
+      
+      // Add new page if needed
+      if (y > 700) {
+        doc.addPage();
+        y = 50;
+      }
+    });
+
+    // Total row
+    y += 5;
+    doc.rect(50, y, 500, 25).fill('#2D8CFF');
+    doc.fillColor('#FFFFFF').fontSize(10);
+    doc.text('', 55, y + 8);
+    doc.text('', 90, y + 8);
+    doc.text('', 180, y + 8);
+    doc.text('TOTAL', 260, y + 8);
+    doc.text(`Rp ${totalSales.toLocaleString('id-ID')}`, 340, y + 8, { width: 80, align: 'right' });
+    doc.text(`Rp ${totalTax.toLocaleString('id-ID')}`, 420, y + 8, { width: 60, align: 'right' });
+    doc.text(`Rp ${(totalSales + totalTax).toLocaleString('id-ID')}`, 480, y + 8, { width: 70, align: 'right' });
+
+    // Footer
+    doc.addPage();
+    doc.fontSize(8).fillColor('#999999');
+    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')} - ${storeName}`, 50, 750, { align: 'center' });
+    
     doc.end();
 
   } catch (error) {
