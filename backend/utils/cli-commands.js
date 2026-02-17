@@ -1,3 +1,5 @@
+const readline = require('readline');
+
 /**
  * CLI Commands for License Management
  * 
@@ -5,8 +7,8 @@
  *   node cli-commands.js set-online
  *   node cli-commands.js set-offline
  *   node cli-commands.js set-domain <domain>
- *   node cli-commands.js set-active
- *   node cli-commands.js revoke
+ *   node cli-commands.js set-active <password>
+ *   node cli-commands.js revoke <password>
  *   node cli-commands.js status
  */
 
@@ -14,6 +16,22 @@ const license = require('./license');
 
 const args = process.argv.slice(2);
 const command = args[0];
+const commandArg = args[1]; // password for set-active/revoke, domain for set-domain
+
+// Create readline interface for password input
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+// Promisify readline question
+const question = (query) => {
+  return new Promise((resolve) => {
+    rl.question(query, (answer) => {
+      resolve(answer);
+    });
+  });
+};
 
 const runCommand = async () => {
   console.log('\n========================================');
@@ -27,10 +45,11 @@ const runCommand = async () => {
       if (onlineResult) {
         console.log('✅ Mode set to ONLINE');
         console.log('   Next step: npm run license:set-domain <your-domain.com>');
-        console.log('   Then: npm run license:set-active');
+        console.log('   Then: npm run license:set-active <password>');
       } else {
         console.log('❌ Failed to set mode');
       }
+      rl.close();
       break;
 
     case 'set-offline':
@@ -38,10 +57,11 @@ const runCommand = async () => {
       const offlineResult = license.setMode('offline');
       if (offlineResult) {
         console.log('✅ Mode set to OFFLINE');
-        console.log('   Next step: npm run license:set-active');
+        console.log('   Next step: npm run license:set-active <password>');
       } else {
         console.log('❌ Failed to set mode');
       }
+      rl.close();
       break;
 
     case 'set-domain':
@@ -50,22 +70,31 @@ const runCommand = async () => {
         console.log('❌ Error: Domain is required');
         console.log('   Usage: npm run license:set-domain <domain.com>');
         console.log('   Example: npm run license:set-domain tokoonline.com');
+        rl.close();
         break;
       }
       console.log(`📌 Setting domain to: ${domain}...`);
       const domainResult = license.setDomain(domain);
       if (domainResult) {
         console.log(`✅ Domain set to: ${domain}`);
-        console.log('   Next step: npm run license:set-active');
+        console.log('   Next step: npm run license:set-active <password>');
       } else {
         console.log('❌ Failed to set domain');
       }
+      rl.close();
       break;
 
     case 'set-active':
+      let password = commandArg;
+      
+      // If no password provided as argument, ask for it
+      if (!password) {
+        password = await question('Enter activation password: ');
+      }
+      
       console.log('📌 Activating license...');
-      const activeResult = license.setActive(true);
-      if (activeResult) {
+      const activeResult = license.setActive(true, password);
+      if (activeResult.success) {
         console.log('✅ License ACTIVATED successfully!');
         
         const info = license.getLicenseInfo();
@@ -75,19 +104,28 @@ const runCommand = async () => {
         console.log(`   Active: ${info.active}`);
         console.log(`   Activated: ${info.activatedAt || 'N/A'}`);
       } else {
-        console.log('❌ Failed to activate license');
+        console.log(`❌ ${activeResult.message}`);
       }
+      rl.close();
       break;
 
     case 'revoke':
+      let revokePassword = commandArg;
+      
+      // If no password provided as argument, ask for it
+      if (!revokePassword) {
+        revokePassword = await question('Enter revoke password: ');
+      }
+      
       console.log('📌 Revoking license...');
-      const revokeResult = license.revoke();
-      if (revokeResult) {
+      const revokeResult = license.revoke(revokePassword);
+      if (revokeResult.success) {
         console.log('✅ License REVOKED');
         console.log('   You can now set new mode and domain');
       } else {
-        console.log('❌ Failed to revoke license');
+        console.log(`❌ ${revokeResult.message}`);
       }
+      rl.close();
       break;
 
     case 'status':

@@ -11,6 +11,7 @@ const crypto = require('crypto');
 
 const LICENSE_FILE = path.join(__dirname, '..', '.license.enc');
 const ENCRYPTION_KEY = process.env.LICENSE_KEY || 'default_license_key_change_me';
+const ACTIVATION_PASSWORD = process.env.ACTIVATION_PASSWORD || 'pos_activation_2024';
 
 /**
  * Get encryption key (must be 32 bytes for AES-256)
@@ -108,19 +109,35 @@ const setDomain = (domain) => {
 
 /**
  * Set license active status
+ * @param {boolean} active - Active status
+ * @param {string} password - Activation password
+ * @returns {object} - { success: boolean, message: string }
  */
-const setActive = (active) => {
+const setActive = (active, password) => {
+  // Verify password
+  if (active && password !== ACTIVATION_PASSWORD) {
+    return { success: false, message: 'Invalid activation password' };
+  }
+  
   const license = getLicense() || { mode: 'offline', domain: '', active: false, createdAt: new Date().toISOString() };
   license.active = active;
   license.activatedAt = active ? new Date().toISOString() : null;
   license.updatedAt = new Date().toISOString();
-  return saveLicense(license);
+  const result = saveLicense(license);
+  return { success: result, message: result ? 'License activated' : 'Failed to save license' };
 };
 
 /**
  * Revoke license (reset)
+ * @param {string} password - Revoke password
+ * @returns {object} - { success: boolean, message: string }
  */
-const revoke = () => {
+const revoke = (password) => {
+  // Verify password
+  if (password !== ACTIVATION_PASSWORD) {
+    return { success: false, message: 'Invalid revoke password' };
+  }
+  
   const license = getLicense() || { mode: 'offline', domain: '', active: false, createdAt: new Date().toISOString() };
   license.active = false;
   license.revokedAt = new Date().toISOString();
