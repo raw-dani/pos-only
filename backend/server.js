@@ -318,7 +318,19 @@ app.delete('/api/products/:id', auth, rbac.requirePermission('products:delete'),
 app.post('/api/invoices', auth, rbac.requirePermission('invoices:create'), validation.validate(validation.invoiceSchema), async (req, res) => {
   console.log('DEBUG - Create invoice called with:', req.body);
   try {
-    const { items, cashierId, subtotal, discount = 0, tax = 0, total, paymentMethodId, paymentAmount } = req.body;
+    const { items, cashierId, discount = 0, paymentMethodId, paymentAmount } = req.body;
+
+    // Get tax settings
+    const settings = await Setting.findOne();
+    const taxEnabled = settings?.taxEnabled || false;
+    const taxRate = parseFloat(settings?.taxRate) || 0;
+    
+    // Calculate subtotal from items
+    const subtotal = items.reduce((sum, item) => sum + parseFloat(item.total || 0), 0);
+    
+    // Calculate tax if enabled
+    const taxAmount = taxEnabled && taxRate > 0 ? subtotal * taxRate / 100 : 0;
+    const total = subtotal + taxAmount;
 
     // Generate invoice number
     const invoiceNumber = `INV-${Date.now()}`;
@@ -326,10 +338,10 @@ app.post('/api/invoices', auth, rbac.requirePermission('invoices:create'), valid
     // Create invoice
     const invoice = await Invoice.create({
       invoiceNumber,
-      cashierId,
+      cashierId: cashierId || 1,
       subtotal,
       discount,
-      tax,
+      tax: taxAmount,
       total,
       status: 'draft'
     });

@@ -219,7 +219,7 @@ const fetchData = async () => {
     return isActive && matchesCategory && matchesSearch;
   });
 
-  const createInvoice = async () => {
+const createInvoice = async () => {
     if (cart.length === 0) {
       alert('Cart is empty');
       return;
@@ -236,24 +236,22 @@ const fetchData = async () => {
         total: parseFloat(item.price)       // total price for this item
       }));
 
-      // Calculate totals
-      const subtotal = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
-      const total = subtotal;
-
+      // Backend will calculate tax based on settings
       const invoiceResponse = await axios.post(`${API_BASE_URL}/api/invoices`, { 
         items: formattedItems,
-        cashierId: 1, // Default to admin user ID - in production, get from auth
-        subtotal: subtotal,
-        total: total
+        cashierId: 1
       }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 
-      // Set current invoice for payment confirmation
+      // Set current invoice for payment confirmation - use backend response with tax calculated
       setCurrentInvoice(invoiceResponse.data);
       setShowPaymentConfirm(true);
 
-      // Don't clear cart yet - wait for payment confirmation
+      // Clear cart after creating invoice
+      setCart([]);
+      setTotal(0);
+
     } catch (err) {
       console.error('Create invoice error:', err);
       alert('Error creating invoice: ' + (err.response?.data?.error || err.message));
@@ -284,8 +282,8 @@ const fetchData = async () => {
         throw new Error('No payment method available');
       }
       
-      // Calculate total from invoice items
-      const totalAmount = currentInvoice.items.reduce((sum, item) => sum + Number(item.total), 0);
+// Use total from invoice (includes tax calculated by backend)
+      const totalAmount = currentInvoice.total;
       
       const response = await axios.put(`${API_BASE_URL}/api/invoices/${currentInvoice.id}/pay`,
         { 
