@@ -323,7 +323,9 @@ const createInvoice = async () => {
   };
 
 const generateInvoiceHTML = (invoice) => {
-    const total = invoice.items.reduce((sum, item) => sum + Number(item.total), 0);
+    const subtotal = invoice.items.reduce((sum, item) => sum + Number(item.total), 0);
+    const taxAmount = Number(invoice.tax) || 0;
+    const grandTotal = Number(invoice.total) || subtotal;
     
     // Get store info from settings
     const storeName = storeSettings?.storeName || 'Toko Saya';
@@ -346,6 +348,12 @@ const generateInvoiceHTML = (invoice) => {
     if (storeName) storeInfoHTML += '<div class="store-name">' + storeName + '</div>';
     if (storeAddress) storeInfoHTML += '<div class="store-address">' + storeAddress + '</div>';
     if (storePhone) storeInfoHTML += '<div class="store-phone">📞 ' + storePhone + '</div>';
+
+    // Build tax section if tax exists
+    let taxHTML = '';
+    if (taxAmount > 0) {
+      taxHTML = '<div class="total-row"><span class="total-label">Tax:</span><span class="total-tax">Rp ' + taxAmount.toLocaleString('id-ID') + '</span></div>';
+    }
 
     // Different styles based on invoice size
     const isThermal = invoiceSize === 'thermal';
@@ -390,7 +398,9 @@ const generateInvoiceHTML = (invoice) => {
       '.price { text-align: right; }' +
       '.total-section { padding: ' + (isThermal ? '10px' : '20px') + '; background: #F9FAFB; border-top: 2px solid #E5E7EB; }' +
       '.total-row { display: flex; justify-content: space-between; align-items: center; }' +
-      '.total-label { font-size: ' + (isThermal ? '12px' : '16px') + '; font-weight: 600; color: #374151; }' +
+      '.total-label { font-size: ' + (isThermal ? '11px' : '14px') + '; font-weight: 600; color: #6B7280; }' +
+      '.total-sub { font-size: ' + (isThermal ? '11px' : '14px') + '; font-weight: 600; color: #6B7280; }' +
+      '.total-tax { font-size: ' + (isThermal ? '11px' : '14px') + '; font-weight: 600; color: #EF4444; }' +
       '.total-amount { font-size: ' + (isThermal ? '14px' : '20px') + '; font-weight: 700; color: #059669; }' +
       '.footer { text-align: center; padding: ' + (isThermal ? '10px' : '20px') + '; background: #F3F4F6; color: #6B7280; font-size: ' + fontSize + '; }' +
       '@media print { body { margin: 0; } .invoice-container { border: none; } }' +
@@ -408,7 +418,11 @@ const generateInvoiceHTML = (invoice) => {
       '<div class="items-section"><table><thead><tr><th>Item</th><th>Qty</th><th>Harga</th><th>Total</th></tr></thead><tbody>' +
       itemsHTML +
       '</tbody></table></div>' +
-      '<div class="total-section"><div class="total-row"><span class="total-label">Total:</span><span class="total-amount">Rp ' + total.toLocaleString('id-ID') + '</span></div></div>' +
+      '<div class="total-section">' +
+      '<div class="total-row"><span class="total-sub">Subtotal:</span><span class="total-sub">Rp ' + subtotal.toLocaleString('id-ID') + '</span></div>' +
+      taxHTML +
+      '<div class="total-row"><span class="total-label">Total:</span><span class="total-amount">Rp ' + grandTotal.toLocaleString('id-ID') + '</span></div>' +
+      '</div>' +
       '<div class="footer"><p>Terima kasih atas kunjungan Anda!</p></div>' +
       '</div></body></html>';
   };
@@ -1473,11 +1487,37 @@ const generateInvoiceHTML = (invoice) => {
               </tbody>
             </table>
 
-            <div style={{
+<div style={{
               borderTop: '1px solid #E5E7EB',
               paddingTop: '16px',
               marginBottom: '20px'
             }}>
+              {/* Show subtotal */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '8px'
+              }}>
+                <span style={{ color: '#6B7280' }}>Subtotal:</span>
+                <span style={{ color: '#1F2937' }}>
+                  Rp {Number(currentInvoice.items.reduce((sum, item) => sum + Number(item.total), 0)).toLocaleString('id-ID')}
+                </span>
+              </div>
+              {/* Show tax if exists */}
+              {currentInvoice.tax > 0 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '8px'
+                }}>
+                  <span style={{ color: '#6B7280' }}>Tax:</span>
+                  <span style={{ color: '#EF4444' }}>
+                    Rp {Number(currentInvoice.tax).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              )}
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -1487,7 +1527,7 @@ const generateInvoiceHTML = (invoice) => {
               }}>
                 <span style={{ color: '#1F2937' }}>Total Amount:</span>
                 <span style={{ color: '#10B981' }}>
-                  Rp {Number(currentInvoice.items.reduce((sum, item) => sum + Number(item.total), 0)).toLocaleString('id-ID')}
+                  Rp {Number(currentInvoice.total).toLocaleString('id-ID')}
                 </span>
               </div>
             </div>
