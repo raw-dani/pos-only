@@ -19,8 +19,37 @@ const auth = require('./middleware/auth');
 const rbac = require('./middleware/rbac');
 const validation = require('./utils/validation');
 const production = require('./middleware/production');
+const license = require('./utils/license');
 
 const app = express();
+
+// ========================================
+// LICENSE CHECK - Run before server starts
+// ========================================
+const checkLicense = () => {
+  // Get the domain from request headers (for checking license)
+  // This will be called when server receives a request
+  return (req, res, next) => {
+    // Get domain from request
+    const host = req.get('host') || req.headers.origin;
+    const licenseCheck = license.isValidLicense(host);
+    
+    if (!licenseCheck.valid) {
+      console.error('LICENSE ERROR:', licenseCheck.reason);
+      return res.status(403).json({ 
+        error: 'License Validation Failed',
+        message: licenseCheck.reason 
+      });
+    }
+    
+    // Attach license info to request for later use
+    req.licenseInfo = licenseCheck;
+    next();
+  };
+};
+
+// Apply license check globally to all routes
+app.use(checkLicense());
 
 // Apply production middleware
 app.use(production.securityHeaders);

@@ -37,3 +37,6 @@ coverage/
 *.swp
 *.swo
 token.txt
+
+# License file (contains encrypted license info)
+backend/.license.enc
