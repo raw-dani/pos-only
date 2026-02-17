@@ -110,12 +110,22 @@ const roles = await Role.bulkCreate([
       isActive: true
     });
     
-    // Create cashier user
+// Create cashier user - roles[2] is Cashier (since we now have Admin, Manager, Cashier)
     await User.create({
       username: 'kasir',
       password: await bcrypt.hash('kasir123', 10),
       name: 'Kasir',
       email: 'kasir@pos.com',
+      roleId: roles[2].id,
+      isActive: true
+    });
+    
+    // Create manager user
+    await User.create({
+      username: 'manager',
+      password: await bcrypt.hash('manager123', 10),
+      name: 'Manager',
+      email: 'manager@pos.com',
       roleId: roles[1].id,
       isActive: true
     });
