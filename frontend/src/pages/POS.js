@@ -1237,36 +1237,54 @@ const generateInvoiceHTML = (invoice) => {
               </p>
             </div>
 
-            <div style={{
-              backgroundColor: '#F9FAFB',
-              padding: '16px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              border: '1px solid #E5E7EB'
-            }}>
-              <h3 style={{
-                color: '#1F2937',
-                margin: '0 0 12px 0',
-                fontSize: '16px',
-                fontWeight: '600'
-              }}>
-                Payment Summary
-              </h3>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span>Total Items:</span>
-                <span>{currentInvoice.items.reduce((sum, item) => sum + Number(item.quantity), 0)} items</span>
-              </div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                color: '#10B981'
-              }}>
-                <span>Total Amount:</span>
-                <span>Rp {Number(currentInvoice.items.reduce((sum, item) => sum + Number(item.total), 0)).toLocaleString('id-ID')}</span>
-              </div>
-            </div>
+{/* Calculate totals with tax */}
+            {(() => {
+              const subtotal = currentInvoice.items.reduce((sum, item) => sum + Number(item.total), 0);
+              const taxAmount = taxInfo.taxEnabled && taxInfo.taxRate > 0 ? subtotal * taxInfo.taxRate / 100 : 0;
+              const totalWithTax = subtotal + taxAmount;
+              return (
+                <div style={{
+                  backgroundColor: '#F9FAFB',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  marginBottom: '20px',
+                  border: '1px solid #E5E7EB'
+                }}>
+                  <h3 style={{
+                    color: '#1F2937',
+                    margin: '0 0 12px 0',
+                    fontSize: '16px',
+                    fontWeight: '600'
+                  }}>
+                    Payment Summary
+                  </h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span>Total Items:</span>
+                    <span>{currentInvoice.items.reduce((sum, item) => sum + Number(item.quantity), 0)} items</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span>Subtotal:</span>
+                    <span>Rp {subtotal.toLocaleString('id-ID')}</span>
+                  </div>
+                  {taxInfo.taxEnabled && taxInfo.taxRate > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span>Tax ({taxInfo.taxRate}%):</span>
+                      <span style={{ color: '#EF4444' }}>Rp {taxAmount.toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: '#10B981'
+                  }}>
+                    <span>Total Amount:</span>
+                    <span>Rp {totalWithTax.toLocaleString('id-ID')}</span>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div style={{
               display: 'flex',
