@@ -11,7 +11,9 @@ const crypto = require('crypto');
 
 const LICENSE_FILE = path.join(__dirname, '..', '.license.enc');
 const ENCRYPTION_KEY = process.env.LICENSE_KEY || 'default_license_key_change_me';
-const ACTIVATION_PASSWORD = process.env.ACTIVATION_PASSWORD || 'pos_activation_2024';
+
+// Hidden activation password - embedded in code (customer cannot see)
+const ACTIVATION_PASSWORD = 'POS_ACTIVATION_KEY_2024';
 
 /**
  * Get encryption key (must be 32 bytes for AES-256)

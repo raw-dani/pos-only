@@ -164,11 +164,11 @@ const runCommand = async () => {
       console.log('   npm run license:status         - Check license status');
       console.log('\nExamples:');
       console.log('   # Offline mode:');
-      console.log('   npm run license:set-offline && npm run license:set-active');
+      console.log('   npm run license:set-offline && npm run license:set-active <password>');
       console.log('\n   # Online mode:');
-      console.log('   npm run license:set-online && npm run license:set-domain tokoonline.com && npm run license:set-active');
+      console.log('   npm run license:set-online && npm run license:set-domain tokoonline.com && npm run license:set-active <password>');
       console.log('\n   # Change domain:');
-      console.log('   npm run license:revoke && npm run license:set-domain newdomain.com && npm run license:set-active');
+      console.log('   npm run license:revoke <password> && npm run license:set-domain newdomain.com && npm run license:set-active <password>');
       break;
   }
 
