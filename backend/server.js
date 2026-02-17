@@ -792,11 +792,21 @@ app.delete('/api/users/:id', auth, rbac.requirePermission('users:delete'), async
   }
 });
 
-// Get all roles - also creates missing roles if needed
+// Get all roles - also creates missing roles if needed and removes duplicates
 app.get('/api/roles', auth, rbac.requirePermission('users:read'), async (req, res) => {
   console.log('DEBUG - Get roles called');
   try {
-    // Ensure all required roles exist
+    // First, remove duplicate "Kasir" if exists (keep only Cashier)
+    const kasirRole = await Role.findOne({ where: { name: 'Kasir' } });
+    if (kasirRole) {
+      console.log('DEBUG - Removing duplicate Kasir role');
+      // Update users with Kasir role to Cashier
+      await User.update({ roleId: null }, { where: { roleId: kasirRole.id } });
+      // Delete the Kasir role
+      await kasirRole.destroy();
+    }
+    
+    // Ensure all required roles exist (use English names only)
     const requiredRoles = ['Admin', 'Manager', 'Cashier'];
     for (const roleName of requiredRoles) {
       const existingRole = await Role.findOne({ where: { name: roleName } });
