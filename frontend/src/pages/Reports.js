@@ -533,6 +533,26 @@ const Reports = () => {
                     }}>
                       Items
                     </th>
+<th style={{
+                      padding: '12px 16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#374151',
+                      borderBottom: '1px solid #E5E7EB',
+                      fontSize: '14px'
+                    }}>
+                      Subtotal
+                    </th>
+                    <th style={{
+                      padding: '12px 16px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#374151',
+                      borderBottom: '1px solid #E5E7EB',
+                      fontSize: '14px'
+                    }}>
+                      Tax
+                    </th>
                     <th style={{
                       padding: '12px 16px',
                       textAlign: 'right',
@@ -590,11 +610,25 @@ const Reports = () => {
                       }}>
                         {report.cashier?.name || 'Unknown'}
                       </td>
-                      <td style={{
+<td style={{
                         padding: '12px 16px',
                         color: '#6B7280'
                       }}>
                         {report.items?.length || 0} items
+                      </td>
+                      <td style={{
+                        padding: '12px 16px',
+                        textAlign: 'right',
+                        color: '#6B7280'
+                      }}>
+                        Rp {Number(report.subtotal || 0).toLocaleString('id-ID')}
+                      </td>
+                      <td style={{
+                        padding: '12px 16px',
+                        textAlign: 'right',
+                        color: report.tax > 0 ? '#EF4444' : '#6B7280'
+                      }}>
+                        {report.tax > 0 ? `Rp ${Number(report.tax || 0).toLocaleString('id-ID')}` : '-'}
                       </td>
                       <td style={{
                         padding: '12px 16px',
@@ -780,11 +814,37 @@ const Reports = () => {
               </tbody>
             </table>
 
-            <div style={{
+<div style={{
               borderTop: '1px solid #E5E7EB',
               paddingTop: '16px',
               marginBottom: '20px'
             }}>
+              {/* Show subtotal */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '8px'
+              }}>
+                <span style={{ color: '#6B7280' }}>Subtotal:</span>
+                <span style={{ color: '#1F2937' }}>
+                  Rp {Number(selectedInvoice.subtotal || selectedInvoice.items?.reduce((sum, item) => sum + Number(item.total || 0), 0) || 0).toLocaleString('id-ID')}
+                </span>
+              </div>
+              {/* Show tax if exists */}
+              {selectedInvoice.tax > 0 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '8px'
+                }}>
+                  <span style={{ color: '#6B7280' }}>Tax:</span>
+                  <span style={{ color: '#EF4444' }}>
+                    Rp {Number(selectedInvoice.tax || 0).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              )}
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
