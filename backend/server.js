@@ -152,7 +152,7 @@ const roles = await Role.bulkCreate([
 
 // Login route with database authentication - with validation and rate limiting
 app.post('/api/auth/login', production.loginLimiter, validation.validate(validation.loginSchema), async (req, res) => {
-  console.log('DEBUG - Login called');
+  console.log('DEBUG - Login called with body:', req.body);
   try {
     const { username, password } = req.body;
 
@@ -161,6 +161,8 @@ app.post('/api/auth/login', production.loginLimiter, validation.validate(validat
       where: { username, isActive: true },
       include: [{ model: Role, as: 'role' }]
     });
+
+    console.log('DEBUG - Found user:', user ? { id: user.id, username: user.username, roleId: user.roleId } : 'NOT FOUND');
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -172,20 +174,24 @@ app.post('/api/auth/login', production.loginLimiter, validation.validate(validat
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Get role name
+    const userRole = user.role ? user.role.name : 'Unknown';
+    console.log('DEBUG - User role:', userRole);
+
     // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, role: user.role?.name },
+      { id: user.id, role: userRole },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
 
-    console.log('DEBUG - Generated token for user:', user.username);
+    console.log('DEBUG - Generated token for user:', user.username, 'with role:', userRole);
     res.json({
       token,
       user: { 
         id: user.id, 
         name: user.name, 
-        role: user.role?.name 
+        role: userRole 
       }
     });
   } catch (error) {
