@@ -574,19 +574,22 @@ app.get('/api/reports/sales/pdf', auth, rbac.requirePermission('reports:export')
     }
     doc.moveDown();
 
-    // Summary Box
+// Summary Box - Left side
     const boxY = doc.y;
-    doc.rect(50, boxY, 250, 55).fillAndStroke('#F3F4F6', '#E5E7EB');
-    doc.fillColor('#1F2937').fontSize(10);
-    doc.text('Ringkasan', 58, boxY + 5);
-    doc.fontSize(9).fillColor('#666666');
-    doc.text(`Total Transaksi: ${invoices.length}`, 58, boxY + 20);
-    doc.text(`Total Item: ${totalItems}`, 58, boxY + 32);
-    doc.fontSize(10).fillColor('#1F2937');
-    doc.text(`Total: Rp ${(totalSales + totalTax).toLocaleString('id-ID')}`, 300, boxY + 5);
+    doc.rect(50, boxY, 150, 50).fillAndStroke('#2D8CFF', '#2D8CFF');
+    doc.fillColor('#FFFFFF').fontSize(10);
+    doc.text('Ringkasan', 55, boxY + 8);
+    doc.fontSize(9);
+    doc.text(`Transaksi: ${invoices.length}`, 55, boxY + 22);
+    doc.text(`Item: ${totalItems}`, 55, boxY + 34);
+
+    // Summary Box - Right side (Total)
+    doc.rect(200, boxY, 350, 50).fillAndStroke('#F3F4F6', '#E5E7EB');
+    doc.fillColor('#1F2937').fontSize(14);
+    doc.text(`Total Penjualan: Rp ${(totalSales + totalTax).toLocaleString('id-ID')}`, 210, boxY + 8);
     if (totalTax > 0) {
-      doc.fontSize(9).fillColor('#EF4444');
-      doc.text(`Pajak: Rp ${totalTax.toLocaleString('id-ID')}`, 300, boxY + 20);
+      doc.fontSize(10).fillColor('#EF4444');
+      doc.text(`(Termasuk Pajak: Rp ${totalTax.toLocaleString('id-ID')})`, 210, boxY + 26);
     }
     doc.moveDown(8);
 
