@@ -16,8 +16,9 @@ const POS = () => {
   const [currentInvoice, setCurrentInvoice] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
-  const [pendingOrders, setPendingOrders] = useState([]);
+const [pendingOrders, setPendingOrders] = useState([]);
   const [showPendingOrders, setShowPendingOrders] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
 // Storage helper functions with fallbacks
   const storage = {
@@ -54,13 +55,20 @@ const POS = () => {
     } else {
       console.log('[POS] No pending orders found in localStorage');
     }
+    // Mark as loaded after initial load
+    setIsLoaded(true);
   }, []);
 
-  // Save pending orders to localStorage whenever they change
+  // Save pending orders to localStorage ONLY after initial load is complete
   useEffect(() => {
+    // Don't save on initial mount before data is loaded
+    if (!isLoaded) {
+      console.log('[POS] Skipping save - not loaded yet');
+      return;
+    }
     console.log('[POS] Saving pending orders:', pendingOrders);
     storage.set('pendingOrders', JSON.stringify(pendingOrders));
-  }, [pendingOrders]);
+  }, [pendingOrders, isLoaded]);
 
   const saveAsPending = () => {
     if (cart.length === 0) {
