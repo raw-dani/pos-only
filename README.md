@@ -88,6 +88,66 @@ Jalankan `debug-app.bat` untuk menjalankan aplikasi dengan logging detail untuk 
 5. Coba tambah product
 6. Periksa log di kedua terminal dan browser console
 
+## License Management
+
+Gunakan perintah CLI berikut untuk mengelola license aplikasi. Pastikan Anda berada di folder `backend` terlebih dahulu:
+
+```
+cd backend
+```
+
+### Menggunakan Node Langsung
+
+| Command | Fungsi |
+|---------|--------|
+| `node utils/cli-commands.js status` | Cek status license |
+| `node utils/cli-commands.js set-offline` | Set mode offline |
+| `node utils/cli-commands.js set-online` | Set mode online |
+| `node utils/cli-commands.js set-domain <domain>` | Set domain |
+| `node utils/cli-commands.js set-active <password>` | Aktifkan license |
+| `node utils/cli-commands.js revoke <password>` | Revoke license |
+
+### Menggunakan npm scripts
+
+| Command | Fungsi |
+|---------|--------|
+| `npm run license:status` | Cek status license |
+| `npm run license:set-offline` | Set mode offline |
+| `npm run license:set-online` | Set mode online |
+| `npm run license:set-domain <domain>` | Set domain |
+| `npm run license:set-active <password>` | Aktifkan license |
+| `npm run license:revoke <password>` | Revoke license |
+
+### Contoh Penggunaan
+
+**Offline Mode:**
+```
+cd backend
+node utils/cli-commands.js set-offline
+node utils/cli-commands.js set-active POS_ACTIVATION_KEY_2024
+```
+
+**Online Mode:**
+```
+cd backend
+node utils/cli-commands.js set-online
+node utils/cli-commands.js set-domain tokoonline.com
+node utils/cli-commands.js set-active POS_ACTIVATION_KEY_2024
+```
+
+**Cek Status:**
+```
+cd backend
+node utils/cli-commands.js status
+```
+
+**Menggunakan npm scripts:**
+```
+cd backend
+npm run license:set-offline
+npm run license:set-active POS_ACTIVATION_KEY_2024
+```
+
 ## 📋 Workflow Lengkap:
 1. **Login** → 2. **Pilih produk** → 3. **Tambah ke cart** → 4. **Create Invoice** (status: PENDING) → 5. **Confirm Payment** (status: PAID) → 6. **Print Invoice**
 

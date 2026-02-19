@@ -88,6 +88,10 @@ const saveLicense = (licenseData) => {
 const setMode = (mode) => {
   const license = getLicense() || { mode: 'offline', domain: '', active: false, createdAt: new Date().toISOString() };
   license.mode = mode;
+  // Clear domain when switching to offline mode
+  if (mode === 'offline') {
+    license.domain = '';
+  }
   license.updatedAt = new Date().toISOString();
   return saveLicense(license);
 };
@@ -144,7 +148,8 @@ const revoke = (password) => {
   license.active = false;
   license.revokedAt = new Date().toISOString();
   license.updatedAt = new Date().toISOString();
-  return saveLicense(license);
+  const result = saveLicense(license);
+  return { success: result, message: result ? 'License revoked' : 'Failed to revoke license' };
 };
 
 /**
