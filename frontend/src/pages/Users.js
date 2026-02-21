@@ -9,6 +9,10 @@ const Users = () => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
     username: '',
@@ -133,6 +137,44 @@ const Users = () => {
       roleId: ''
     });
     setError(null);
+  };
+
+  const openResetModal = (user) => {
+    setResetPasswordUser(user);
+    setNewPassword('');
+    setShowResetModal(true);
+  };
+
+  const closeResetModal = () => {
+    setShowResetModal(false);
+    setResetPasswordUser(null);
+    setNewPassword('');
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!newPassword) {
+      setError('Password is required');
+      return;
+    }
+    setResetLoading(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      await axios.put(
+        `${API_BASE_URL}/api/users/${resetPasswordUser.id}/reset-password`,
+        { newPassword },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      setMessage('Password reset successfully!');
+      closeResetModal();
+    } catch (err) {
+      console.error('Error resetting password:', err);
+      setError(err.response?.data?.error || 'Failed to reset password');
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   const getRoleBadgeColor = (roleName) => {
@@ -360,6 +402,21 @@ const Users = () => {
                             Edit
                           </button>
                           <button
+                            onClick={() => openResetModal(user)}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: '#F59E0B',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              marginRight: '8px'
+                            }}
+                          >
+                            Reset
+                          </button>
+                          <button
                             onClick={() => handleDelete(user.id)}
                             style={{
                               padding: '6px 12px',
@@ -561,6 +618,95 @@ const Users = () => {
                   }}
                 >
                   {loading ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {showResetModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            width: '100%',
+            maxWidth: '400px'
+          }}>
+            <h2 style={{ color: '#1F2937', margin: '0 0 20px 0', fontSize: '20px', fontWeight: '600' }}>
+              🔑 Reset Password
+            </h2>
+            <p style={{ color: '#6B7280', marginBottom: '20px' }}>
+              Reset password for user: <strong>{resetPasswordUser?.username}</strong>
+            </p>
+
+            <form onSubmit={handleResetPassword}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', color: '#374151', fontWeight: '500' }}>
+                  New Password *
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="Enter new password"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={closeResetModal}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#6B7280',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: resetLoading ? '#A7D3FF' : '#F59E0B',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    cursor: resetLoading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {resetLoading ? 'Resetting...' : 'Reset Password'}
                 </button>
               </div>
             </form>

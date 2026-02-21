@@ -57,3 +57,28 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    
+    if (!newPassword) {
+      return res.status(400).json({ error: 'New password is required' });
+    }
+    
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const [updated] = await User.update(
+      { password: hashedPassword },
+      { where: { id } }
+    );
+    
+    if (updated) {
+      res.json({ message: 'Password reset successfully' });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

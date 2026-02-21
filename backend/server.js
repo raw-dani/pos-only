@@ -686,6 +686,33 @@ app.delete('/api/users/:id', auth, rbac.requirePermission('users:delete'), async
   }
 });
 
+// Reset password route
+app.put('/api/users/:id/reset-password', auth, rbac.requirePermission('users:update'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    
+    if (!newPassword) {
+      return res.status(400).json({ error: 'New password is required' });
+    }
+    
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const [updated] = await User.update(
+      { password: hashedPassword },
+      { where: { id } }
+    );
+    
+    if (updated) {
+      res.json({ message: 'Password reset successfully' });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    console.error('Reset password error:', error.message);
+    res.status(500).json({ error: safeError(error) });
+  }
+});
+
 // ========================================
 // ROLES ROUTE
 // ========================================
