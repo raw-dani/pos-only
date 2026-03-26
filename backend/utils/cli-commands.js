@@ -17,6 +17,16 @@ const license = require('./license');
 const args = process.argv.slice(2);
 const command = args[0];
 const commandArg = args[1]; // password for set-active/revoke, domain for set-domain
+const commandArg2 = args[2]; // password for set-domain
+
+// Set activation password from command line argument for security
+// This password is passed by developer during CLI operations, NOT from .env
+if (commandArg && ['set-active', 'revoke'].includes(command)) {
+  license.setActivationPassword(commandArg);
+}
+if (commandArg2 && command === 'set-domain') {
+  license.setActivationPassword(commandArg2);
+}
 
 // Create readline interface for password input
 const rl = readline.createInterface({
@@ -66,15 +76,23 @@ const runCommand = async () => {
 
     case 'set-domain':
       const domain = args[1];
+      const domainPassword = args[2]; // Password as 3rd argument
+      
       if (!domain) {
         console.log('❌ Error: Domain is required');
-        console.log('   Usage: npm run license:set-domain <domain.com>');
-        console.log('   Example: npm run license:set-domain tokoonline.com');
+        console.log('   Usage: node cli-commands.js set-domain <domain.com> <password>');
+        console.log('   Example: node cli-commands.js set-domain tokoonline.com mypassword123');
         rl.close();
         break;
       }
+      
+      // Require password for security
+      if (!domainPassword) {
+        domainPassword = await question('Enter authorization password: ');
+      }
+      
       console.log(`📌 Setting domain to: ${domain}...`);
-      const domainResult = license.setDomain(domain);
+      const domainResult = license.setDomain(domain, domainPassword);
       if (domainResult) {
         console.log(`✅ Domain set to: ${domain}`);
         console.log('   Next step: npm run license:set-active <password>');

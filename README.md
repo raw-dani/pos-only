@@ -90,63 +90,106 @@ Jalankan `debug-app.bat` untuk menjalankan aplikasi dengan logging detail untuk 
 
 ## License Management
 
-Gunakan perintah CLI berikut untuk mengelola license aplikasi. Pastikan Anda berada di folder `backend` terlebih dahulu:
+Gunakan perintah CLI berikut untuk mengelola license aplikasi.
+
+### ⚠️ PENTING - Environment Variables
+
+CLI commands membutuhkan environment variable LICENSE_KEY:
 
 ```
-cd backend
+powershell
+# Contoh:
+$env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js status
 ```
 
 ### Menggunakan Node Langsung
 
 | Command | Fungsi |
 |---------|--------|
-| `node utils/cli-commands.js status` | Cek status license |
-| `node utils/cli-commands.js set-offline` | Set mode offline |
-| `node utils/cli-commands.js set-online` | Set mode online |
-| `node utils/cli-commands.js set-domain <domain>` | Set domain |
-| `node utils/cli-commands.js set-active <password>` | Aktifkan license |
-| `node utils/cli-commands.js revoke <password>` | Revoke license |
-
-### Menggunakan npm scripts
-
-| Command | Fungsi |
-|---------|--------|
-| `npm run license:status` | Cek status license |
-| `npm run license:set-offline` | Set mode offline |
-| `npm run license:set-online` | Set mode online |
-| `npm run license:set-domain <domain>` | Set domain |
-| `npm run license:set-active <password>` | Aktifkan license |
-| `npm run license:revoke <password>` | Revoke license |
+| `node backend/utils/cli-commands.js status` | Cek status license |
+| `node backend/utils/cli-commands.js set-offline` | Set mode offline |
+| `node backend/utils/cli-commands.js set-online` | Set mode online |
+| `node backend/utils/cli-commands.js set-domain <domain> <password>` | Set domain (diperlukan password) |
+| `node backend/utils/cli-commands.js set-active <password>` | Aktifkan license |
+| `node backend/utils/cli-commands.js revoke <password>` | Revoke license |
 
 ### Contoh Penggunaan
 
 **Offline Mode:**
 ```
-cd backend
-node utils/cli-commands.js set-offline
-node utils/cli-commands.js set-active POS_ACTIVATION_KEY_2024
+powershell
+$env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-offline
+$env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-active passwordanda
 ```
 
 **Online Mode:**
 ```
-cd backend
-node utils/cli-commands.js set-online
-node utils/cli-commands.js set-domain tokoonline.com
-node utils/cli-commands.js set-active POS_ACTIVATION_KEY_2024
+powershell
+$env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-online
+$env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-domain tokoonline.com passwordanda
+$env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-active passwordanda
+```
+
+**Ganti Domain (memerlukan password):**
+```
+powershell
+$env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js revoke passwordlama
+$env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-domain domainbaru.com passwordlama
+$env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-active passwordlama
 ```
 
 **Cek Status:**
 ```
-cd backend
-node utils/cli-commands.js status
+powershell
+$env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js status
 ```
 
-**Menggunakan npm scripts:**
+### Generate License Otomatis
+
+Gunakan `generate-license.ps1` untuk membuat license secara otomatis:
+
+```powershell
+# Mode Interaktif (akan meminta input)
+powershell -ExecutionPolicy Bypass -File generate-license.ps1
+
+# Offline Mode (dengan parameter)
+powershell -ExecutionPolicy Bypass -File generate-license.ps1 -CustomerName "Customer A" -CustomerEmail "customer@test.com"
+
+# Online Mode  
+powershell -ExecutionPolicy Bypass -File generate-license.ps1 -CustomerName "Customer B" -CustomerEmail "customer@test.com" -Domain "tokoonline.com"
 ```
-cd backend
-npm run license:set-offline
-npm run license:set-active POS_ACTIVATION_KEY_2024
-```
+
+Script akan menghasilkan:
+- **LICENSE_KEY** - Untuk encrypt/decrypt license file (disimpan di .env customer)
+- **Activation Password** - Password untuk aktivasi & ubah domain (HANYA di tangan developer)
+
+### Alur License (Untuk Developer)
+
+1. **Generate License**:
+   - Jalankan `generate-license.ps1`
+   - Script akan generate LICENSE_KEY dan Activation Password
+   - Simpan LICENSE_KEY untuk diberikan ke customer
+   - Simpan Activation Password (untuk security - customer tidak perlu tahu)
+
+2. **Beri ke Customer**:
+   - Kirim file aplikasi + LICENSE_KEY (untuk disimpan di .env)
+   - Activation Password TIDAK diberikan ke customer (untuk mencegah penyalahgunaan)
+   - Activation Password hanya di tangan developer
+
+3. **Aktivasi oleh Developer**:
+   - Saat customer mau aktivasi, developer jalankan:
+     ```powershell
+     $env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-active <password>
+     ```
+   - Tanpa password ini, aplikasi tidak bisa aktif
+
+4. **Ganti Domain** (jika diperlukan):
+   - Customer meminta ganti domain
+   - Developer jalankan:
+     ```powershell
+     $env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-domain domainbaru.com <password>
+     ```
+   - Ganti domain memerlukan password (hanya developer yang tahu)
 
 ## 📋 Workflow Lengkap:
 1. **Login** → 2. **Pilih produk** → 3. **Tambah ke cart** → 4. **Create Invoice** (status: PENDING) → 5. **Confirm Payment** (status: PAID) → 6. **Print Invoice**

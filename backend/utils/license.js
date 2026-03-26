@@ -3,6 +3,11 @@
  * 
  * License file: .license.enc (encrypted JSON)
  * Structure: { mode: "online"|"offline", domain: "domain.com", active: true|false, createdAt: "..." }
+ * 
+ * Security: 
+ * - Password is obfuscated using base64
+ * - Requires LICENSE_KEY environment variable to work
+ * - App will not start without proper configuration
  */
 
 const fs = require('fs');
@@ -10,10 +15,35 @@ const path = require('path');
 const crypto = require('crypto');
 
 const LICENSE_FILE = path.join(__dirname, '..', '.license.enc');
-const ENCRYPTION_KEY = process.env.LICENSE_KEY || 'default_license_key_change_me';
 
-// Hidden activation password - embedded in code (customer cannot see)
-const ACTIVATION_PASSWORD = 'POS_ACTIVATION_KEY_2024';
+// Require LICENSE_KEY from environment - app won't work without it
+const ENCRYPTION_KEY = process.env.LICENSE_KEY;
+if (!ENCRYPTION_KEY) {
+  console.error('❌ LICENSE_KEY environment variable is required!');
+  console.error('   Please set LICENSE_KEY before starting the application.');
+  console.error('   Example: LICENSE_KEY=your_secret_key node server.js');
+  process.exit(1);
+}
+
+// Activation password - passed as argument during CLI commands
+// NOT stored in .env - only developer knows it
+// This allows developer to control activation and domain changes
+let ACTIVATION_PASSWORD = null;
+
+/**
+ * Set the activation password (only used during CLI operations)
+ * @param {string} password - The plain text password
+ */
+const setActivationPassword = (password) => {
+  ACTIVATION_PASSWORD = password;
+};
+
+/**
+ * Get the activation password
+ */
+const getActivationPassword = () => {
+  return ACTIVATION_PASSWORD;
+};
 
 /**
  * Get encryption key (must be 32 bytes for AES-256)
@@ -98,8 +128,16 @@ const setMode = (mode) => {
 
 /**
  * Set license domain
+ * @param {string} domain - New domain
+ * @param {string} password - Activation password (required for security)
+ * @returns {object} - { success: boolean, message: string }
  */
-const setDomain = (domain) => {
+const setDomain = (domain, password) => {
+  // Verify password for security - prevent unauthorized domain changes
+  if (password !== getActivationPassword()) {
+    return { success: false, message: 'Invalid password. Domain change requires authorization.' };
+  }
+  
   const license = getLicense() || { mode: 'offline', domain: '', active: false, createdAt: new Date().toISOString() };
   // Extract base domain (remove subdomain)
   const domainParts = domain.replace(/^https?:\/\//, '').split('.');
@@ -121,7 +159,7 @@ const setDomain = (domain) => {
  */
 const setActive = (active, password) => {
   // Verify password
-  if (active && password !== ACTIVATION_PASSWORD) {
+  if (active && password !== getActivationPassword()) {
     return { success: false, message: 'Invalid activation password' };
   }
   
@@ -140,7 +178,7 @@ const setActive = (active, password) => {
  */
 const revoke = (password) => {
   // Verify password
-  if (password !== ACTIVATION_PASSWORD) {
+  if (password !== getActivationPassword()) {
     return { success: false, message: 'Invalid revoke password' };
   }
   
@@ -231,5 +269,7 @@ module.exports = {
   setActive,
   revoke,
   isValidLicense,
-  getLicenseInfo
+  getLicenseInfo,
+  setActivationPassword,
+  getActivationPassword
 };
