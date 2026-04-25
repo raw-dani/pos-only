@@ -119,46 +119,98 @@ const Footer = () => {
   );
 
   return (
-    <footer style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: '#F9FAFB',
-      borderTop: '1px solid #E5E7EB',
-      padding: '8px 24px',
-      zIndex: 100
-    }}>
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: '16px',
-        fontSize: '11px',
-        color: '#6B7280'
-      }}>
-        {settings.storeName && (
-          <span style={{ fontWeight: '500', color: '#374151' }}>
-            {settings.storeName}
-          </span>
-        )}
-        
-        {infoParts.length > 0 && (
-          <span style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {infoParts}
-          </span>
-        )}
+    <>
+      <style>{`
+        @media (max-width: 1023px) {
+          .footer-bar {
+            padding: 4px 12px !important;
+          }
+          .footer-inner {
+            gap: 8px !important;
+            font-size: 10px !important;
+          }
+          .footer-info span > svg + * {
+            display: none !important;
+          }
+          .footer-info span > svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .footer-social a svg {
+            width: 16px !important;
+            height: 16px !important;
+          }
+        }
+        @media (max-width: 767px) {
+          .footer-bar {
+            padding: 3px 8px !important;
+          }
+          .footer-inner {
+            gap: 6px !important;
+            font-size: 9px !important;
+          }
+          .footer-info {
+            display: none !important;
+          }
+          .footer-social a svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+        }
+      `}</style>
+      <footer
+        className="footer-bar"
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#F9FAFB',
+          borderTop: '1px solid #E5E7EB',
+          padding: '8px 24px',
+          zIndex: 100
+        }}
+      >
+        <div
+          className="footer-inner"
+          style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '16px',
+            fontSize: '11px',
+            color: '#6B7280'
+          }}
+        >
+          {settings.storeName && (
+            <span style={{ fontWeight: '500', color: '#374151', whiteSpace: 'nowrap' }}>
+              {settings.storeName}
+            </span>
+          )}
 
-        {socialParts.length > 0 && (
-          <span style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {socialParts}
-          </span>
-        )}
-      </div>
-    </footer>
+          {infoParts.length > 0 && (
+            <span
+              className="footer-info"
+              style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}
+            >
+              {infoParts}
+            </span>
+          )}
+
+          {socialParts.length > 0 && (
+            <span
+              className="footer-social"
+              style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}
+            >
+              {socialParts}
+            </span>
+          )}
+        </div>
+      </footer>
+    </>
   );
 };
 

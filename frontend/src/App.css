@@ -1,38 +1,404 @@
-.App {
-  text-align: center;
+/* ========================================
+   POS Application - Responsive Stylesheet
+   Supports: Desktop, Tablet, Mobile
+   ======================================== */
+
+/* ---- CSS Reset & Base ---- */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  -ms-overflow-style: scrollbar;
+  -webkit-tap-highlight-color: transparent;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  color: #1f2937;
+  background-color: #f5f9ff;
+  overflow-x: hidden;
+}
+
+/* ---- Responsive Typography ---- */
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 15px;
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+@media (min-width: 1024px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+/* ---- Responsive Layout Utilities ---- */
+.responsive-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 12px;
+}
+
+@media (min-width: 640px) {
+  .responsive-container {
+    max-width: 640px;
+    padding: 0 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-container {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-container {
+    max-width: 1024px;
+    padding: 0 24px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .responsive-container {
+    max-width: 1280px;
+  }
+}
+
+/* ---- POS Main Layout ---- */
+.pos-layout {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  padding: 12px;
+}
+
+@media (min-width: 1024px) {
+  .pos-layout {
+    flex-direction: row;
+    gap: 24px;
+    padding: 24px;
+  }
+}
+
+.pos-products {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .pos-products {
+    flex: 2 1 0%;
+  }
+}
+
+.pos-cart {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .pos-cart {
+    flex: 1 1 0%;
+    position: sticky;
+    top: 24px;
+    align-self: flex-start;
+  }
+}
+
+/* ---- Responsive Header ---- */
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 768px) {
+  .page-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+  }
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
-.App-link {
-  color: #61dafb;
+/* ---- Product Grid ---- */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+@media (min-width: 640px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
   }
 }
+
+@media (min-width: 1024px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+}
+
+/* ---- Responsive Table ---- */
+.responsive-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table-wrapper table {
+  min-width: 600px;
+  width: 100%;
+}
+
+/* ---- Responsive Modal ---- */
+.modal-content {
+  width: 95%;
+  max-width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .modal-content {
+    width: 90%;
+    max-width: 500px;
+  }
+}
+
+@media (min-width: 768px) {
+  .modal-content {
+    max-width: 600px;
+  }
+}
+
+/* ---- Touch-friendly buttons on mobile ---- */
+@media (max-width: 767px) {
+  button,
+  [role="button"],
+  input[type="submit"],
+  input[type="button"] {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  /* Larger touch targets for cart quantity buttons */
+  .qty-btn {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 18px !important;
+  }
+
+  /* Stack filter controls vertically */
+  .filter-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .filter-row > * {
+    width: 100% !important;
+  }
+
+  /* Reduce padding on cards */
+  .card-padding {
+    padding: 14px !important;
+  }
+
+  /* Smaller heading on mobile */
+  .mobile-heading {
+    font-size: 18px !important;
+  }
+
+  /* Hide some text, show icons only on very small screens */
+  .hide-mobile-text {
+    font-size: 0 !important;
+    padding: 8px !important;
+  }
+}
+
+/* ---- Summary Cards Grid ---- */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .summary-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+
+/* ---- Scrollbar Styling ---- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ---- Print Styles ---- */
+@media print {
+  body {
+    background: white !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ---- Reduced Motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---- Responsive Header Buttons (Tablet & Mobile) ---- */
+
+/* Tablet: 768px - 1023px */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .page-header {
+    padding: 10px 14px !important;
+    gap: 8px !important;
+  }
+  .page-header h1 {
+    font-size: 18px !important;
+  }
+  .header-actions {
+    gap: 6px !important;
+  }
+  .header-actions > button,
+  .header-actions > div > button,
+  .header-actions .btn-pill {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    border-radius: 5px !important;
+    white-space: nowrap !important;
+  }
+  .header-actions .user-badge {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Mobile: < 768px */
+@media (max-width: 767px) {
+  .page-header {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+  }
+  .page-header h1 {
+    font-size: 16px !important;
+    width: 100%;
+    text-align: center;
+  }
+  .header-actions {
+    gap: 4px !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .header-actions > button,
+  .header-actions > div > button,
+  .header-actions .btn-pill {
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+    border-radius: 4px !important;
+    flex: 1 1 auto !important;
+    text-align: center !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+  }
+  /* Hide emoji+text on smallest screens, keep minimal */
+  .header-actions .hide-xs {
+    display: none !important;
+  }
+  .header-actions .user-badge {
+    display: none !important;
+  }
+}
+
+/* Very small mobile: < 480px */
+@media (max-width: 480px) {
+  .page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 6px 8px !important;
+  }
+  .header-actions {
+    gap: 3px !important;
+    flex-wrap: wrap !important;
+  }
+  .header-actions > button,
+  .header-actions > div > button,
+  .header-actions .btn-pill {
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+    flex: 1 1 auto !important;
+  }
+}
+
+/* ---- Loading Skeleton Animation ---- */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+

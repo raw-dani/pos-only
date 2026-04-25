@@ -99,7 +99,7 @@ const [invoiceSize, setInvoiceSize] = useState('thermal'); // 'thermal' or 'a4'
 
   const loadPendingOrder = (order) => {
     if (cart.length > 0) {
-      if (!confirm('Current cart has items. Replace with this pending order?')) {
+      if (!window.confirm('Current cart has items. Replace with this pending order?')) {
         return;
       }
     }
@@ -110,14 +110,14 @@ const [invoiceSize, setInvoiceSize] = useState('thermal'); // 'thermal' or 'a4'
   };
 
   const deletePendingOrder = (orderId) => {
-    if (!confirm('Delete this pending order?')) return;
+    if (!window.confirm('Delete this pending order?')) return;
     
     const updated = pendingOrders.filter(o => o.id !== orderId);
     setPendingOrders(updated);
   };
 
   const clearPendingOrders = () => {
-    if (!confirm('Clear all pending orders?')) return;
+    if (!window.confirm('Clear all pending orders?')) return;
     setPendingOrders([]);
   };
 
@@ -434,13 +434,9 @@ const generateInvoiceHTML = (invoice) => {
       fontFamily: 'Arial, sans-serif'
     }}>
       {/* Header */}
-      <div style={{
+      <div className="page-header" style={{
         backgroundColor: '#FFFFFF',
-        padding: '16px 24px',
         borderBottom: '1px solid #E5E7EB',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
       }}>
         <h1 style={{
@@ -451,7 +447,7 @@ const generateInvoiceHTML = (invoice) => {
         }}>
           POS Invoice System
         </h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="header-actions" style={{ display: 'flex', gap: '8px' }}>
 {/* Show Manage Products button only for Admin and Manager */}
           {(isAdmin() || isManager()) && (
             <button
@@ -469,12 +465,12 @@ const generateInvoiceHTML = (invoice) => {
               onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
               onMouseLeave={(e) => e.target.style.backgroundColor = '#10B981'}
             >
-              📦 Manage Products
+              📦 <span className="hide-xs">Manage Products</span>
             </button>
           )}
 {/* Show Users and Settings buttons only for Admin */}
           {isAdmin() && (
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <>
             <button
               onClick={() => navigate('/users')}
               style={{
@@ -490,7 +486,7 @@ const generateInvoiceHTML = (invoice) => {
               onMouseEnter={(e) => e.target.style.backgroundColor = '#7C3AED'}
               onMouseLeave={(e) => e.target.style.backgroundColor = '#8B5CF6'}
             >
-              👥 Users
+              👥 <span className="hide-xs">Users</span>
             </button>
             <button
               onClick={() => navigate('/settings')}
@@ -507,9 +503,9 @@ const generateInvoiceHTML = (invoice) => {
               onMouseEnter={(e) => e.target.style.backgroundColor = '#4B5563'}
               onMouseLeave={(e) => e.target.style.backgroundColor = '#6B7280'}
             >
-              ⚙️ Settings
+              ⚙️ <span className="hide-xs">Settings</span>
             </button>
-            </div>
+            </>
           )}
 {/* Show Reports button for all authenticated users */}
           <button
@@ -527,7 +523,7 @@ const generateInvoiceHTML = (invoice) => {
             onMouseEnter={(e) => e.target.style.backgroundColor = '#D97706'}
             onMouseLeave={(e) => e.target.style.backgroundColor = '#F59E0B'}
           >
-            📊 Reports
+            📊 <span className="hide-xs">Reports</span>
           </button>
           {/* Pending Orders button */}
           <button
@@ -545,10 +541,10 @@ const generateInvoiceHTML = (invoice) => {
             onMouseEnter={(e) => e.target.style.backgroundColor = pendingOrders.length > 0 ? '#7C3AED' : '#4B5563'}
             onMouseLeave={(e) => e.target.style.backgroundColor = pendingOrders.length > 0 ? '#8B5CF6' : '#6B7280'}
           >
-            📋 Pending ({pendingOrders.length})
+            📋 <span className="hide-xs">Pending ({pendingOrders.length})</span>
           </button>
           {/* User info and role */}
-          <span style={{
+          <span className="user-badge" style={{
             padding: '8px 16px',
             backgroundColor: '#E5E7EB',
             color: '#374151',
@@ -574,28 +570,31 @@ const generateInvoiceHTML = (invoice) => {
             onMouseEnter={(e) => e.target.style.backgroundColor = '#DC2626'}
             onMouseLeave={(e) => e.target.style.backgroundColor = '#EF4444'}
           >
-            Logout
+            <span className="hide-xs">Logout</span>
+            <span className="show-xs-only" style={{ display: 'none' }}>🚪</span>
           </button>
         </div>
       </div>
 
-      <div style={{ padding: '24px', display: 'flex', gap: '24px' }}>
+      <div className="pos-layout">
         {/* Products Section */}
-        <div style={{ flex: 2 }}>
-          <div style={{
+        <div className="pos-products">
+          <div className="card-padding" style={{
             backgroundColor: '#FFFFFF',
-            padding: '20px',
             borderRadius: '12px',
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #E5E7EB'
+            border: '1px solid #E5E7EB',
+            padding: '20px'
           }}>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '20px'
+              marginBottom: '20px',
+              flexWrap: 'wrap',
+              gap: '12px'
             }}>
-<h2 style={{
+<h2 className="mobile-heading" style={{
                 color: '#1F2937',
                 margin: '0',
                 fontSize: '20px',
@@ -603,7 +602,7 @@ const generateInvoiceHTML = (invoice) => {
               }}>
                 Products ({filteredProducts.length})
               </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <div className="filter-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 {/* Search Input */}
                 <div style={{ position: 'relative' }}>
                   <input
@@ -687,11 +686,7 @@ const generateInvoiceHTML = (invoice) => {
                 </select>
               </div>
             </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              gap: '16px'
-            }}>
+            <div className="product-grid">
               {filteredProducts.map(product => (
                 <div
                   key={product.id}
@@ -767,15 +762,13 @@ const generateInvoiceHTML = (invoice) => {
         </div>
 
         {/* Cart Section */}
-        <div style={{ flex: 1 }}>
-          <div style={{
+        <div className="pos-cart">
+          <div className="card-padding" style={{
             backgroundColor: '#FFFFFF',
-            padding: '20px',
             borderRadius: '12px',
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
             border: '1px solid #E5E7EB',
-            position: 'sticky',
-            top: '24px'
+            padding: '20px'
           }}>
             <h2 style={{
               color: '#1F2937',

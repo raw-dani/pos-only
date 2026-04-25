@@ -4,8 +4,16 @@ const { Op } = require('sequelize');
 
 exports.getSalesReport = async (req, res) => {
   try {
-    const { startDate, endDate, cashier } = req.query;
-    let where = { status: 'paid' };
+    const { startDate, endDate, cashier, status } = req.query;
+    let where = {};
+    // Default status = 'paid'. Use 'all' to get all statuses.
+    if (status === 'all') {
+      // no status filter
+    } else if (status) {
+      where.status = status;
+    } else {
+      where.status = 'paid';
+    }
     if (startDate && endDate) {
       where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
     }
@@ -25,8 +33,16 @@ exports.getSalesReport = async (req, res) => {
 
 exports.exportSalesReportPDF = async (req, res) => {
   try {
-    const { startDate, endDate, cashier } = req.query;
-    let where = { status: 'paid' };
+    const { startDate, endDate, cashier, status } = req.query;
+    let where = {};
+    // Default status = 'paid'. Use 'all' to get all statuses.
+    if (status === 'all') {
+      // no status filter
+    } else if (status) {
+      where.status = status;
+    } else {
+      where.status = 'paid';
+    }
     if (startDate && endDate) {
       where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
     }

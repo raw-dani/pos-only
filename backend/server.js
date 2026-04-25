@@ -402,7 +402,7 @@ app.get('/api/invoices', auth, rbac.requirePermission('invoices:read'), async (r
   }
 });
 
-app.put('/api/invoices/:id/pay', auth, rbac.requirePermission('invoices:update'), validation.validate(validation.paymentSchema), async (req, res) => {
+app.put('/api/invoices/:id/pay', auth, rbac.requirePermission('invoices:create'), validation.validate(validation.paymentSchema), async (req, res) => {
   try {
     const invoice = await Invoice.findByPk(req.params.id);
     if (!invoice) return res.status(404).json({ error: 'Invoice not found' });

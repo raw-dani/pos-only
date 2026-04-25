@@ -174,23 +174,26 @@ Write-Host ""
 Write-Host "Berikan informasi ini ke customer:"
 Write-Host ""
 Write-Host "========================================"
-Write-Host "  LICENSE ACTIVATION"
+Write-Host "  LICENSE INFO"
 Write-Host "========================================"
 Write-Host ""
-Write-Host "Activation Password: $plainPassword" -ForegroundColor Green
+Write-Host "License sudah AKTIF dan siap digunakan." -ForegroundColor Green
 Write-Host ""
-
+Write-Host "Yang perlu customer lakukan:" -ForegroundColor Cyan
+Write-Host "1. Pastikan file backend/.env berisi:"
+Write-Host "   LICENSE_KEY=$LICENSE_KEY"
+Write-Host "2. Pastikan file backend/.license.enc ada di project"
+Write-Host "3. Jalankan aplikasi seperti biasa (run-app.bat atau manual)"
+Write-Host ""
+Write-Host "CATATAN: Jangan hapus file backend/.license.enc" -ForegroundColor Yellow
+Write-Host "         dan jangan ubah LICENSE_KEY di backend/.env"
+Write-Host ""
 if ($Domain) {
-    Write-Host "Cara Aktivasi (Online Mode):" -ForegroundColor Cyan
-    Write-Host "1. Pastikan LICENSE_KEY=$LICENSE_KEY ada di backend/.env"
-    Write-Host "2. Jalankan: node backend/utils/cli-commands.js set-online"
-    Write-Host "3. Jalankan: node backend/utils/cli-commands.js set-domain $Domain"
-    Write-Host "4. Jalankan: node backend/utils/cli-commands.js set-active $plainPassword"
+    Write-Host "Mode: ONLINE - Domain: $Domain" -ForegroundColor Cyan
+    Write-Host "Aplikasi hanya bisa diakses dari domain yang terdaftar."
 } else {
-    Write-Host "Cara Aktivasi (Offline Mode):" -ForegroundColor Cyan
-    Write-Host "1. Pastikan LICENSE_KEY=$LICENSE_KEY ada di backend/.env"
-    Write-Host "2. Jalankan: node backend/utils/cli-commands.js set-offline"
-    Write-Host "3. Jalankan: node backend/utils/cli-commands.js set-active $plainPassword"
+    Write-Host "Mode: OFFLINE - Localhost only" -ForegroundColor Cyan
+    Write-Host "Aplikasi hanya bisa dijalankan di localhost (127.0.0.1)."
 }
 
 Write-Host ""

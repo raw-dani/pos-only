@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_BASE_URL from '../utils/api';
+import { hasPermission } from '../utils/auth';
 import Footer from '../components/Footer';
 
 const Products = () => {
@@ -386,7 +387,7 @@ const Products = () => {
       fontFamily: 'Arial, sans-serif'
     }}>
       {/* Header */}
-      <div style={{
+      <div className="page-header" style={{
         backgroundColor: '#FFFFFF',
         padding: '16px 24px',
         borderBottom: '1px solid #E5E7EB',
@@ -403,7 +404,7 @@ const Products = () => {
         }}>
           Product Management
         </h1>
-        <div>
+        <div className="header-actions">
           <button
             onClick={() => window.location.href = '/pos'}
             style={{
@@ -420,43 +421,47 @@ const Products = () => {
             onMouseEnter={(e) => e.target.style.backgroundColor = '#8BB9FF'}
             onMouseLeave={(e) => e.target.style.backgroundColor = '#A7D3FF'}
           >
-            ← Back to POS
+            ← <span className="hide-xs">Back to POS</span>
           </button>
-          <button
-            onClick={() => setShowCategoryForm(true)}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#10B981',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              marginRight: '8px',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#10B981'}
-          >
-            📁 Manage Categories
-          </button>
-          <button
-            onClick={() => setShowForm(true)}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#2D8CFF',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#1A73E8'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#2D8CFF'}
-          >
-            + Add Product
-          </button>
+          {hasPermission('categories:create') && (
+            <button
+              onClick={() => setShowCategoryForm(true)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#10B981',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                marginRight: '8px',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#10B981'}
+            >
+              📁 <span className="hide-xs">Manage Categories</span>
+            </button>
+          )}
+          {hasPermission('products:create') && (
+            <button
+              onClick={() => setShowForm(true)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#2D8CFF',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#1A73E8'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#2D8CFF'}
+            >
+              + <span className="hide-xs">Add Product</span>
+            </button>
+          )}
         </div>
       </div>
 

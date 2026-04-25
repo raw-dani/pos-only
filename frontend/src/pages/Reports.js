@@ -1,6 +1,8 @@
+/* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../utils/api';
+import { hasPermission } from '../utils/auth';
 import Footer from '../components/Footer';
 
 const Reports = () => {
@@ -12,7 +14,8 @@ const Reports = () => {
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
-    cashier: ''
+    cashier: '',
+    status: 'paid'
   });
 
   useEffect(() => {
@@ -26,13 +29,22 @@ const Reports = () => {
       if (filters.startDate) params.append('startDate', filters.startDate);
       if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.cashier) params.append('cashier', filters.cashier);
+      // Jangan kirim status jika value adalah 'all'
+      if (filters.status && filters.status !== 'all') params.append('status', filters.status);
 
       const response = await axios.get(`${API_BASE_URL}/api/reports/sales?${params}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
 
-      setReports(response.data.invoices || []);
-      setTotalSales(response.data.totalSales || 0);
+      let invoices = response.data.invoices || [];
+      
+      // Client side fallback filtering untuk memastikan filter status bekerja 100%
+      if (filters.status && filters.status !== 'all') {
+        invoices = invoices.filter(inv => inv.status === filters.status);
+      }
+      
+      setReports(invoices);
+      setTotalSales(invoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0));
     } catch (error) {
       console.error('Error fetching reports:', error);
       setReports([]);
@@ -48,6 +60,8 @@ const Reports = () => {
       if (filters.startDate) params.append('startDate', filters.startDate);
       if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.cashier) params.append('cashier', filters.cashier);
+      // Jangan kirim status jika value adalah 'all'
+      if (filters.status && filters.status !== 'all') params.append('status', filters.status);
 
       const response = await axios.get(`${API_BASE_URL}/api/reports/sales/pdf?${params}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -118,6 +132,211 @@ const Reports = () => {
     window.location.href = '/';
   };
 
+  const renderSales = () => {
+    if (loading) {
+      return (
+        <div style={{
+          padding: '40px',
+          textAlign: 'center',
+          color: '#6B7280'
+        }}>
+          Loading reports...
+        </div>
+      );
+    }
+    if (reports.length === 0) {
+      return (
+        <div style={{
+          textAlign: 'center',
+          padding: '40px',
+          color: '#6B7280'
+        }}>
+          No sales data found for the selected period
+        </div>
+      );
+    }
+    return (
+      <div style={{
+        overflowX: 'auto'
+      }}>
+        <table style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          marginBottom: '20px'
+        }}>
+          <thead>
+            <tr style={{ backgroundColor: '#F9FAFB' }}>
+              <th style={{
+                padding: '12px 16px',
+                textAlign: 'left',
+                fontWeight: '600',
+                color: '#374151',
+                borderBottom: '1px solid #E5E7EB',
+                fontSize: '14px'
+              }}>
+                Invoice #
+              </th>
+              <th style={{
+                padding: '12px 16px',
+                textAlign: 'left',
+                fontWeight: '600',
+                color: '#374151',
+                borderBottom: '1px solid #E5E7EB',
+                fontSize: '14px'
+              }}>
+                Date
+              </th>
+              <th style={{
+                padding: '12px 16px',
+                textAlign: 'left',
+                fontWeight: '600',
+                color: '#374151',
+                borderBottom: '1px solid #E5E7EB',
+                fontSize: '14px'
+              }}>
+                Cashier
+              </th>
+              <th style={{
+                padding: '12px 16px',
+                textAlign: 'left',
+                fontWeight: '600',
+                color: '#374151',
+                borderBottom: '1px solid #E5E7EB',
+                fontSize: '14px'
+              }}>
+                Items
+              </th>
+              <th style={{
+                padding: '12px 16px',
+                textAlign: 'right',
+                fontWeight: '600',
+                color: '#374151',
+                borderBottom: '1px solid #E5E7EB',
+                fontSize: '14px'
+              }}>
+                Subtotal
+              </th>
+              <th style={{
+                padding: '12px 16px',
+                textAlign: 'right',
+                fontWeight: '600',
+                color: '#374151',
+                borderBottom: '1px solid #E5E7EB',
+                fontSize: '14px'
+              }}>
+                Tax
+              </th>
+              <th style={{
+                padding: '12px 16px',
+                textAlign: 'right',
+                fontWeight: '600',
+                color: '#374151',
+                borderBottom: '1px solid #E5E7EB',
+                fontSize: '14px'
+              }}>
+                Total
+              </th>
+              <th style={{
+                padding: '12px 16px',
+                textAlign: 'center',
+                fontWeight: '600',
+                color: '#374151',
+                borderBottom: '1px solid #E5E7EB',
+                fontSize: '14px'
+              }}>
+                Status
+              </th>
+            </tr>
+                 </thead>
+                 {/* table body */}
+                 <tbody>
+                   {/* reports */}
+                   {reports.map((report, index) => (
+              <tr 
+                key={report.id || index} 
+                style={{
+                  borderBottom: '1px solid #E5E7EB',
+                  transition: 'background-color 0.2s',
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  setSelectedInvoice(report);
+                  setShowDetail(true);
+                }}
+                onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#EBF5FF'}
+                onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = 'transparent'}
+              >
+                <td style={{
+                  padding: '12px 16px',
+                  fontWeight: '500',
+                  color: '#1F2937'
+                }}>
+                  #{report.id}
+                </td>
+                <td style={{
+                  padding: '12px 16px',
+                  color: '#6B7280'
+                }}>
+                  {new Date(report.createdAt).toLocaleDateString('id-ID')}
+                </td>
+                <td style={{
+                  padding: '12px 16px',
+                  color: '#6B7280'
+                }}>
+                  {report.cashier?.name || 'Unknown'}
+                </td>
+                <td style={{
+                  padding: '12px 16px',
+                  color: '#6B7280'
+                }}>
+                  {report.items?.length || 0} items
+                </td>
+                <td style={{
+                  padding: '12px 16px',
+                  textAlign: 'right',
+                  color: '#6B7280'
+                }}>
+                  Rp {Number(report.subtotal || 0).toLocaleString('id-ID')}
+                </td>
+                <td style={{
+                  padding: '12px 16px',
+                  textAlign: 'right',
+                  color: report.tax > 0 ? '#EF4444' : '#6B7280'
+                }}>
+                  {report.tax > 0 ? `Rp ${Number(report.tax || 0).toLocaleString('id-ID')}` : '-'}
+                </td>
+                <td style={{
+                  padding: '12px 16px',
+                  textAlign: 'right',
+                  fontWeight: '600',
+                  color: '#10B981'
+                }}>
+                  Rp {Number(report.total || 0).toLocaleString('id-ID')}
+                </td>
+                <td style={{
+                  padding: '12px 16px',
+                  textAlign: 'center'
+                }}>
+                  <span style={{
+                    padding: '4px 8px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    textTransform: 'uppercase',
+                    backgroundColor: report.status === 'paid' ? '#D1FAE5' : report.status === 'unpaid' ? '#FEE2E2' : '#E5E7EB',
+                    color: report.status === 'paid' ? '#065F46' : report.status === 'unpaid' ? '#991B1B' : '#374151'
+                  }}>
+                    {report.status}
+                  </span>
+                </td>
+              </tr>
+                   ))}
+                 </tbody>
+        </table>
+      </div>
+    );
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -139,7 +358,7 @@ const Reports = () => {
           margin: '0',
           fontSize: '24px',
           fontWeight: 'bold'
-        }}>
+          }}>
           Sales Reports
         </h1>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -177,18 +396,18 @@ const Reports = () => {
           >
             Logout
           </button>
-        </div>
+        </div>      
+        
       </div>
 
-      <div style={{ padding: '24px' }}>
-        {/* Filters */}
-        <div style={{
+      {/* Filters Section */}
+        <div style={{          
           backgroundColor: '#FFFFFF',
           padding: '20px',
           borderRadius: '12px',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
           border: '1px solid #E5E7EB',
-          marginBottom: '24px'
+          margin: '24px'
         }}>
           <h2 style={{
             color: '#1F2937',
@@ -280,6 +499,37 @@ const Reports = () => {
               />
             </div>
 
+            <div>
+              <label style={{
+                display: 'block',
+                color: '#1F2937',
+                fontSize: '14px',
+                fontWeight: '500',
+                marginBottom: '8px'
+              }}>
+                Status
+              </label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                style={{
+                  padding: '8px 12px',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  color: '#1F2937',
+                  backgroundColor: '#FFFFFF',
+                  outline: 'none',
+                  minWidth: '120px'
+                }}
+              >
+                <option value="paid">Paid</option>
+                <option value="unpaid">Unpaid</option>
+                <option value="draft">Draft</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
                 onClick={setToday}
@@ -334,40 +584,45 @@ const Reports = () => {
               </button>
             </div>
 
-            <button
-              onClick={exportPDF}
-              disabled={reports.length === 0}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: reports.length === 0 ? '#E5E7EB' : '#2D8CFF',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: reports.length === 0 ? 'not-allowed' : 'pointer',
-                transition: 'background-color 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                if (reports.length > 0) e.target.style.backgroundColor = '#1A73E8';
-              }}
-              onMouseLeave={(e) => {
-                if (reports.length > 0) e.target.style.backgroundColor = '#2D8CFF';
-              }}
-            >
-              📄 Export PDF
-            </button>
+            {hasPermission('reports:export') && (
+              <button
+                onClick={exportPDF}
+                disabled={reports.length === 0}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: reports.length === 0 ? '#E5E7EB' : '#2D8CFF',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: reports.length === 0 ? 'not-allowed' : 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (reports.length > 0) e.target.style.backgroundColor = '#1A73E8';
+                }}
+                onMouseLeave={(e) => {
+                  if (reports.length > 0) e.target.style.backgroundColor = '#2D8CFF';
+                }}
+              >
+                📄 Export PDF
+              </button>
+            )}
           </div>
         </div>
-
-        {/* Summary Cards */}
+      
+      <div style={{
+        padding: '0 24px',
+        marginBottom: '24px'
+      }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: '1fr 1fr 1fr',
           gap: '16px',
           marginBottom: '24px'
         }}>
-          <div style={{
+          <div key="total-sales" style={{
             backgroundColor: '#FFFFFF',
             padding: '20px',
             borderRadius: '12px',
@@ -390,11 +645,11 @@ const Reports = () => {
               fontSize: '28px',
               fontWeight: 'bold'
             }}>
-              Rp {totalSales.toLocaleString('id-ID')}
+              Rp {Number(totalSales || 0).toLocaleString('id-ID')}
             </p>
           </div>
 
-          <div style={{
+          <div key="total-transactions" style={{
             backgroundColor: '#FFFFFF',
             padding: '20px',
             borderRadius: '12px',
@@ -421,7 +676,7 @@ const Reports = () => {
             </p>
           </div>
 
-          <div style={{
+          <div key="average-transaction" style={{
             backgroundColor: '#FFFFFF',
             padding: '20px',
             borderRadius: '12px',
@@ -444,12 +699,12 @@ const Reports = () => {
               fontSize: '28px',
               fontWeight: 'bold'
             }}>
-              Rp {reports.length > 0 ? (totalSales / reports.length).toLocaleString('id-ID') : '0'}
+              Rp {reports.length > 0 ? Number(totalSales / reports.length).toLocaleString('id-ID') : '0'}
             </p>
           </div>
         </div>
 
-        {/* Sales Table */}
+        {/* Sales Details */}
         <div style={{
           backgroundColor: '#FFFFFF',
           padding: '20px',
@@ -457,434 +712,249 @@ const Reports = () => {
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
           border: '1px solid #E5E7EB'
         }}>
-          <h2 style={{
-            color: '#1F2937',
-            margin: '0 0 20px 0',
-            fontSize: '20px',
-            fontWeight: '600'
-          }}>
-            Sales Details ({reports.length} transactions)
-          </h2>
+           <div>
+           <h2 style={{
+             color: '#1F2937',
+             margin: '0 0 20px 0',
+             fontSize: '20px',
+             fontWeight: '600'
+           }}>
+             Sales Details ({reports.length} transactions)
+           </h2>
+           </div>
+           <div>
+           {renderSales()}
+           </div>
+        </div>
+      </div>
 
-          {loading ? (
+      
+      <div>
+        {showDetail && selectedInvoice && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
             <div style={{
-              textAlign: 'center',
-              padding: '40px',
-              color: '#6B7280'
+              backgroundColor: '#FFFFFF',
+              padding: '24px',
+              borderRadius: '12px',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              border: '1px solid #E5E7EB',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflowY: 'auto'
             }}>
-              Loading reports...
-            </div>
-          ) : reports.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '40px',
-              color: '#6B7280'
-            }}>
-              No sales data found for the selected period
-            </div>
-          ) : (
-            <div style={{
-              overflowX: 'auto'
-            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px'
+              }}>
+                <h2 style={{
+                  color: '#1F2937',
+                  margin: '0',
+                  fontSize: '20px',
+                  fontWeight: '600'
+                }}>
+                  Invoice #{selectedInvoice.id} Details
+                </h2>
+                <button
+                  onClick={() => setShowDetail(false)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    color: '#6B7280'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <p style={{ margin: '5px 0', color: '#6B7280' }}>
+                  <strong>Date:</strong> {new Date(selectedInvoice.createdAt).toLocaleString('id-ID')}
+                </p>
+                <p style={{ margin: '5px 0', color: '#6B7280' }}>
+                  <strong>Cashier:</strong> {selectedInvoice.cashier?.name || 'Unknown'}
+                </p>
+                <p style={{ margin: '5px 0' }}>
+                  <strong>Status:</strong>
+                  <span style={{
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    color: '#FFFFFF',
+                    backgroundColor: selectedInvoice.status === 'paid' ? '#10B981' : selectedInvoice.status === 'unpaid' ? '#EF4444' : '#6B7280',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    marginLeft: '8px',
+                    textTransform: 'uppercase'
+                  }}>
+                    {selectedInvoice.status}
+                  </span>
+                </p>
+              </div>
+
               <table style={{
                 width: '100%',
                 borderCollapse: 'collapse',
-                marginBottom: '20px'
+                marginBottom: '20px',
+                border: '1px solid #E5E7EB'
               }}>
                 <thead>
                   <tr style={{ backgroundColor: '#F9FAFB' }}>
                     <th style={{
-                      padding: '12px 16px',
+                      padding: '12px',
                       textAlign: 'left',
                       fontWeight: '600',
-                      color: '#374151',
+                      color: '#1F2937',
                       borderBottom: '1px solid #E5E7EB',
                       fontSize: '14px'
-                    }}>
-                      Invoice #
-                    </th>
+                    }}>Product</th>
                     <th style={{
-                      padding: '12px 16px',
-                      textAlign: 'left',
-                      fontWeight: '600',
-                      color: '#374151',
-                      borderBottom: '1px solid #E5E7EB',
-                      fontSize: '14px'
-                    }}>
-                      Date
-                    </th>
-                    <th style={{
-                      padding: '12px 16px',
-                      textAlign: 'left',
-                      fontWeight: '600',
-                      color: '#374151',
-                      borderBottom: '1px solid #E5E7EB',
-                      fontSize: '14px'
-                    }}>
-                      Cashier
-                    </th>
-                    <th style={{
-                      padding: '12px 16px',
-                      textAlign: 'left',
-                      fontWeight: '600',
-                      color: '#374151',
-                      borderBottom: '1px solid #E5E7EB',
-                      fontSize: '14px'
-                    }}>
-                      Items
-                    </th>
-<th style={{
-                      padding: '12px 16px',
-                      textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#374151',
-                      borderBottom: '1px solid #E5E7EB',
-                      fontSize: '14px'
-                    }}>
-                      Subtotal
-                    </th>
-                    <th style={{
-                      padding: '12px 16px',
-                      textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#374151',
-                      borderBottom: '1px solid #E5E7EB',
-                      fontSize: '14px'
-                    }}>
-                      Tax
-                    </th>
-                    <th style={{
-                      padding: '12px 16px',
-                      textAlign: 'right',
-                      fontWeight: '600',
-                      color: '#374151',
-                      borderBottom: '1px solid #E5E7EB',
-                      fontSize: '14px'
-                    }}>
-                      Total
-                    </th>
-                    <th style={{
-                      padding: '12px 16px',
+                      padding: '12px',
                       textAlign: 'center',
                       fontWeight: '600',
-                      color: '#374151',
+                      color: '#1F2937',
                       borderBottom: '1px solid #E5E7EB',
                       fontSize: '14px'
-                    }}>
-                      Status
-                    </th>
+                    }}>Qty</th>
+                    <th style={{
+                      padding: '12px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      borderBottom: '1px solid #E5E7EB',
+                      fontSize: '14px'
+                    }}>Price</th>
+                    <th style={{
+                      padding: '12px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      borderBottom: '1px solid #E5E7EB',
+                      fontSize: '14px'
+                    }}>Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {reports.map((report, index) => (
-                    <tr 
-                      key={report.id || index} 
-                      style={{
-                        borderBottom: '1px solid #E5E7EB',
-                        transition: 'background-color 0.2s',
-                        cursor: 'pointer'
-                      }}
-                      onClick={() => {
-                        setSelectedInvoice(report);
-                        setShowDetail(true);
-                      }}
-                      onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#EBF5FF'}
-                      onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = 'transparent'}
-                    >
-                      <td style={{
-                        padding: '12px 16px',
-                        fontWeight: '500',
-                        color: '#1F2937'
-                      }}>
-                        #{report.id}
+                  {selectedInvoice.items?.map((item, index) => (
+                    <tr key={index}>
+                      <td style={{ padding: '12px', borderBottom: '1px solid #E5E7EB' }}>
+                        {item.name || item.product?.name || 'Product'}
                       </td>
                       <td style={{
-                        padding: '12px 16px',
-                        color: '#6B7280'
+                        padding: '12px',
+                        textAlign: 'center',
+                        borderBottom: '1px solid #E5E7EB'
                       }}>
-                        {new Date(report.createdAt).toLocaleDateString('id-ID')}
+                        {item.quantity}
                       </td>
                       <td style={{
-                        padding: '12px 16px',
-                        color: '#6B7280'
-                      }}>
-                        {report.cashier?.name || 'Unknown'}
-                      </td>
-<td style={{
-                        padding: '12px 16px',
-                        color: '#6B7280'
-                      }}>
-                        {report.items?.length || 0} items
-                      </td>
-                      <td style={{
-                        padding: '12px 16px',
+                        padding: '12px',
                         textAlign: 'right',
-                        color: '#6B7280'
+                        borderBottom: '1px solid #E5E7EB'
                       }}>
-                        Rp {Number(report.subtotal || 0).toLocaleString('id-ID')}
+                        Rp {Number(item.price || 0).toLocaleString('id-ID')}
                       </td>
                       <td style={{
-                        padding: '12px 16px',
+                        padding: '12px',
                         textAlign: 'right',
-                        color: report.tax > 0 ? '#EF4444' : '#6B7280'
+                        borderBottom: '1px solid #E5E7EB'
                       }}>
-                        {report.tax > 0 ? `Rp ${Number(report.tax || 0).toLocaleString('id-ID')}` : '-'}
-                      </td>
-                      <td style={{
-                        padding: '12px 16px',
-                        textAlign: 'right',
-                        fontWeight: '600',
-                        color: '#10B981'
-                      }}>
-                        Rp {Number(report.total || 0).toLocaleString('id-ID')}
-                      </td>
-                      <td style={{
-                        padding: '12px 16px',
-                        textAlign: 'center'
-                      }}>
-                        <span style={{
-                          padding: '4px 8px',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          textTransform: 'uppercase',
-                          backgroundColor: report.status === 'paid' ? '#D1FAE5' : '#FEF3C7',
-                          color: report.status === 'paid' ? '#065F46' : '#92400E'
-                        }}>
-                          {report.status}
-                        </span>
+                        Rp {Number(item.total || 0).toLocaleString('id-ID')}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Invoice Detail Modal */}
-      {showDetail && selectedInvoice && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            padding: '24px',
-            borderRadius: '12px',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #E5E7EB',
-            width: '100%',
-            maxWidth: '600px',
-            maxHeight: '80vh',
-            overflowY: 'auto'
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '20px'
-            }}>
-              <h2 style={{
-                color: '#1F2937',
-                margin: '0',
-                fontSize: '20px',
-                fontWeight: '600'
-              }}>
-                Invoice #{selectedInvoice.id} Details
-              </h2>
-              <button
-                onClick={() => setShowDetail(false)}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  color: '#6B7280'
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            <div style={{ marginBottom: '20px' }}>
-              <p style={{ margin: '5px 0', color: '#6B7280' }}>
-                <strong>Date:</strong> {new Date(selectedInvoice.createdAt).toLocaleString('id-ID')}
-              </p>
-              <p style={{ margin: '5px 0', color: '#6B7280' }}>
-                <strong>Cashier:</strong> {selectedInvoice.cashier?.name || 'Unknown'}
-              </p>
-              <p style={{ margin: '5px 0' }}>
-                <strong>Status:</strong>
-                <span style={{
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  color: '#FFFFFF',
-                  backgroundColor: selectedInvoice.status === 'paid' ? '#10B981' : '#F59E0B',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  marginLeft: '8px',
-                  textTransform: 'uppercase'
-                }}>
-                  {selectedInvoice.status}
-                </span>
-              </p>
-            </div>
-
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              marginBottom: '20px',
-              border: '1px solid #E5E7EB'
-            }}>
-              <thead>
-                <tr style={{ backgroundColor: '#F9FAFB' }}>
-                  <th style={{
-                    padding: '12px',
-                    textAlign: 'left',
-                    fontWeight: '600',
-                    color: '#1F2937',
-                    borderBottom: '1px solid #E5E7EB',
-                    fontSize: '14px'
-                  }}>Product</th>
-                  <th style={{
-                    padding: '12px',
-                    textAlign: 'center',
-                    fontWeight: '600',
-                    color: '#1F2937',
-                    borderBottom: '1px solid #E5E7EB',
-                    fontSize: '14px'
-                  }}>Qty</th>
-                  <th style={{
-                    padding: '12px',
-                    textAlign: 'right',
-                    fontWeight: '600',
-                    color: '#1F2937',
-                    borderBottom: '1px solid #E5E7EB',
-                    fontSize: '14px'
-                  }}>Price</th>
-                  <th style={{
-                    padding: '12px',
-                    textAlign: 'right',
-                    fontWeight: '600',
-                    color: '#1F2937',
-                    borderBottom: '1px solid #E5E7EB',
-                    fontSize: '14px'
-                  }}>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedInvoice.items?.map((item, index) => (
-                  <tr key={index}>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #E5E7EB' }}>
-                      {item.name || item.product?.name || 'Product'}
-                    </td>
-                    <td style={{
-                      padding: '12px',
-                      textAlign: 'center',
-                      borderBottom: '1px solid #E5E7EB'
-                    }}>
-                      {item.quantity}
-                    </td>
-                    <td style={{
-                      padding: '12px',
-                      textAlign: 'right',
-                      borderBottom: '1px solid #E5E7EB'
-                    }}>
-                      Rp {Number(item.price || 0).toLocaleString('id-ID')}
-                    </td>
-                    <td style={{
-                      padding: '12px',
-                      textAlign: 'right',
-                      borderBottom: '1px solid #E5E7EB'
-                    }}>
-                      Rp {Number(item.total || 0).toLocaleString('id-ID')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-<div style={{
-              borderTop: '1px solid #E5E7EB',
-              paddingTop: '16px',
-              marginBottom: '20px'
-            }}>
-              {/* Show subtotal */}
               <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '8px'
+                borderTop: '1px solid #E5E7EB',
+                paddingTop: '16px',
+                marginBottom: '20px'
               }}>
-                <span style={{ color: '#6B7280' }}>Subtotal:</span>
-                <span style={{ color: '#1F2937' }}>
-                  Rp {Number(selectedInvoice.subtotal || selectedInvoice.items?.reduce((sum, item) => sum + Number(item.total || 0), 0) || 0).toLocaleString('id-ID')}
-                </span>
-              </div>
-              {/* Show tax if exists */}
-              {selectedInvoice.tax > 0 && (
+                <div>
+                {/* Show subtotal */}
                 <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   marginBottom: '8px'
                 }}>
-                  <span style={{ color: '#6B7280' }}>Tax:</span>
-                  <span style={{ color: '#EF4444' }}>
-                    Rp {Number(selectedInvoice.tax || 0).toLocaleString('id-ID')}
+                  <span style={{ color: '#6B7280' }}>Subtotal:</span>
+                  <span style={{ color: '#1F2937' }}>
+                    Rp {Number(selectedInvoice.subtotal || selectedInvoice.items?.reduce((sum, item) => sum + Number(item.total || 0), 0) || 0).toLocaleString('id-ID')}
                   </span>
                 </div>
-              )}
+                {/* Show tax if exists */}
+                <div>
+                  {selectedInvoice.tax > 0 && (
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '8px'
+                    }}>
+                      <span style={{ color: '#6B7280' }}>Tax:</span>
+                      <span style={{ color: '#EF4444' }}>
+                        Rp {Number(selectedInvoice.tax || 0).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '18px',
+                  fontWeight: 'bold'
+                }}>
+                  <span style={{ color: '#1F2937' }}>Total Amount:</span>
+                  <span style={{ color: '#10B981' }}>
+                    Rp {Number(selectedInvoice.total || 0).toLocaleString('id-ID')}
+                  </span>
+                </div>
+                </div>
+              </div>
+
               <div style={{
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                fontSize: '18px',
-                fontWeight: 'bold'
+                justifyContent: 'flex-end'
               }}>
-                <span style={{ color: '#1F2937' }}>Total Amount:</span>
-                <span style={{ color: '#10B981' }}>
-                  Rp {Number(selectedInvoice.total || 0).toLocaleString('id-ID')}
-                </span>
+                <button
+                  onClick={() => setShowDetail(false)}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: '#6B7280',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#4B5563'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#6B7280'}
+                >
+                  Close
+                </button>
               </div>
             </div>
-
-            <div style={{
-              display: 'flex',
-              gap: '12px',
-              justifyContent: 'flex-end'
-            }}>
-              <button
-                onClick={() => setShowDetail(false)}
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#6B7280',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s'
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#4B5563'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#6B7280'}
-              >
-                Close
-              </button>
-            </div>
           </div>
-        </div>
       )}
+      </div>
 
       {/* Footer */}
       <Footer />

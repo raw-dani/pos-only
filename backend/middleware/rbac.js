@@ -7,9 +7,9 @@
 // Define role hierarchy (higher number = more permissions)
 const ROLE_LEVELS = {
   'Admin': 3,
-  'Cashier': 2,
   'Manager': 2,
-  'Viewer': 1
+  'Cashier': 1,
+  'Viewer': 0
 };
 
 // Define permissions for each role

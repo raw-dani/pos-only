@@ -144,52 +144,132 @@ powershell
 $env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js status
 ```
 
-### Generate License Otomatis
+### Generate License Otomatis (`generate-license.ps1`)
 
-Gunakan `generate-license.ps1` untuk membuat license secara otomatis:
+**Overview**: Script PowerShell yang mengotomatisasi seluruh proses pembuatan license — mulai dari generate `LICENSE_KEY`, konfigurasi mode (online/offline), setting domain, hingga aktivasi license.
+
+#### Cara Kerja Script (Internal Workflow)
+
+Script menjalankan langkah-langkah berikut secara otomatis:
+
+**1. Inisialisasi LICENSE_KEY**
+- Membaca file `backend/.env` untuk mencari `LICENSE_KEY` yang sudah ada
+- Jika `LICENSE_KEY` belum ada, script generate otomatis string random **32 karakter** alphanumeric
+- Menyimpan `LICENSE_KEY` ke `backend/.env`
+
+**2. Input Data Customer**
+- Jika parameter `-CustomerName`, `-CustomerEmail`, `-Domain` diberikan → gunakan nilai parameter
+- Jika tidak → masuk ke **Mode Interaktif** (script akan meminta input Nama, Email, dan Domain via prompt)
+
+**3. Generate Activation Password**
+- Membuat password random **12 karakter** alphanumeric
+- **⚠️ PENTING**: Password ini hanya ditampilkan di terminal. **TIDAK disimpan ke file manapun** (termasuk `.env`)
+
+**4. Hapus License Lama**
+- Menghapus file `backend/.license.enc` jika sudah ada
+- Ini memastikan state license bersih sebelum generate yang baru
+
+**5. Konfigurasi Mode**
+- **Online Mode** (jika `-Domain` diisi):
+  - `node backend/utils/cli-commands.js set-online`
+  - `node backend/utils/cli-commands.js set-domain <domain> <password>`
+- **Offline Mode** (jika `-Domain` kosong):
+  - `node backend/utils/cli-commands.js set-offline`
+
+**6. Aktivasi License**
+- `node backend/utils/cli-commands.js set-active <password>`
+- Password dikirim sebagai **argument CLI**, bukan dari environment variable
+
+**7. Verifikasi Status**
+- Menampilkan status license final dengan `node backend/utils/cli-commands.js status`
+
+#### Parameter
+
+| Parameter | Required | Default | Deskripsi |
+|-----------|----------|---------|-----------|
+| `-CustomerName` | Tidak | `""` | Nama customer |
+| `-CustomerEmail` | Tidak | `""` | Email customer (saat ini belum digunakan, untuk pengembangan auto-email) |
+| `-Domain` | Tidak | `""` | Domain untuk mode online. **Kosongkan untuk mode offline** |
+
+#### Contoh Penggunaan
 
 ```powershell
-# Mode Interaktif (akan meminta input)
+# Mode Interaktif (akan meminta input satu per satu)
 powershell -ExecutionPolicy Bypass -File generate-license.ps1
 
-# Offline Mode (dengan parameter)
+# Offline Mode dengan parameter
 powershell -ExecutionPolicy Bypass -File generate-license.ps1 -CustomerName "Customer A" -CustomerEmail "customer@test.com"
 
-# Online Mode  
+# Online Mode dengan domain
 powershell -ExecutionPolicy Bypass -File generate-license.ps1 -CustomerName "Customer B" -CustomerEmail "customer@test.com" -Domain "tokoonline.com"
 ```
 
-Script akan menghasilkan:
-- **LICENSE_KEY** - Untuk encrypt/decrypt license file (disimpan di .env customer)
-- **Activation Password** - Password untuk aktivasi & ubah domain (HANYA di tangan developer)
+#### Output & File yang Dihasilkan
 
-### Alur License (Untuk Developer)
+**File yang dibuat/dimodifikasi:**
+- `backend/.env` — Ditambahkan `LICENSE_KEY=<key>` (jika belum ada)
+- `backend/.license.enc` — File license terenkripsi (file lama dihapus, dibuat baru)
+
+**Informasi yang ditampilkan di terminal:**
+
+```
+--- INFORMASI LICENSE ---
+Customer: <nama>
+Email: <email>
+Mode: ONLINE/OFFLINE
+Activation Password: <password>
+
+--- CONFIG UNTUK SERVER (Developer) ---
+Simpan di backend/.env:
+LICENSE_KEY=<key>
+
+--- INFORMASI UNTUK CUSTOMER ---
+Activation Password: <password>
+[Langkah-langkah aktivasi sesuai mode]
+```
+
+#### Model Keamanan
+
+| Aspek | Detail |
+|-------|--------|
+| **LICENSE_KEY** | Disimpan di `backend/.env`, dibutuhkan untuk enkripsi/dekripsi file license. Dibagikan ke customer. |
+| **Activation Password** | Hanya developer yang tahu. Digunakan untuk aktivasi (`set-active`), ubah domain (`set-domain`), dan revoke (`revoke`). |
+| **Password Storage** | Password **TIDAK pernah** ditulis ke file apapun. Hanya muncul di output terminal saat generate. |
+| **License Encryption** | File `.license.enc` dienkripsi dengan **AES-256-CBC** menggunakan hash SHA-256 dari `LICENSE_KEY`. |
+
+#### Alur License (Developer → Customer)
 
 1. **Generate License**:
-   - Jalankan `generate-license.ps1`
-   - Script akan generate LICENSE_KEY dan Activation Password
-   - Simpan LICENSE_KEY untuk diberikan ke customer
-   - Simpan Activation Password (untuk security - customer tidak perlu tahu)
+   - Developer jalankan `generate-license.ps1`
+   - Script otomatis generate `LICENSE_KEY` dan `Activation Password`
+   - Simpan `LICENSE_KEY` untuk diberikan ke customer
+   - Simpan `Activation Password` dengan aman (jangan diberi ke customer)
 
-2. **Beri ke Customer**:
-   - Kirim file aplikasi + LICENSE_KEY (untuk disimpan di .env)
-   - Activation Password TIDAK diberikan ke customer (untuk mencegah penyalahgunaan)
-   - Activation Password hanya di tangan developer
+2. **Kirim ke Customer**:
+   - Kirim file aplikasi lengkap
+   - Berikan `LICENSE_KEY` untuk customer simpan di `backend/.env`
+   - `Activation Password` **TIDAK** diberikan ke customer (mencegah penyalahgunaan)
 
-3. **Aktivasi oleh Developer**:
-   - Saat customer mau aktivasi, developer jalankan:
-     ```powershell
-     $env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-active <password>
-     ```
-   - Tanpa password ini, aplikasi tidak bisa aktif
+3. **Aplikasi Siap Pakai**:
+   - Setelah script dijalankan, aplikasi sudah dalam keadaan **aktif**
+   - Customer tinggal menjalankan aplikasi dengan `LICENSE_KEY` yang diberikan
+   - Tidak perlu aktivasi manual lagi
 
-4. **Ganti Domain** (jika diperlukan):
-   - Customer meminta ganti domain
-   - Developer jalankan:
+4. **Maintenance (Ganti Domain / Revoke)**:
+   - Jika customer perlu ganti domain, developer jalankan:
      ```powershell
      $env:LICENSE_KEY="xxx"; node backend/utils/cli-commands.js set-domain domainbaru.com <password>
      ```
-   - Ganti domain memerlukan password (hanya developer yang tahu)
+   - Ganti domain memerlukan `Activation Password` (hanya developer yang tahu)
+
+#### Troubleshooting
+
+| Masalah | Penyebab | Solusi |
+|---------|----------|--------|
+| `ExecutionPolicy` error | PowerShell tidak mengizinkan script | Gunakan flag `-ExecutionPolicy Bypass` |
+| `LICENSE_KEY` tidak generate | File `.env` tidak bisa ditulis | Pastikan permission write ke folder `backend/` |
+| Node.js error | Node.js tidak terinstall atau tidak di PATH | Install Node.js dan pastikan tersedia di terminal |
+| `cli-commands.js` not found | Menjalankan script dari folder salah | Pastikan berada di root folder project (tempat `generate-license.ps1` berada) |
 
 ## 📋 Workflow Lengkap:
 1. **Login** → 2. **Pilih produk** → 3. **Tambah ke cart** → 4. **Create Invoice** (status: PENDING) → 5. **Confirm Payment** (status: PAID) → 6. **Print Invoice**
