@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../utils/api';
-import { isAdmin } from '../utils/auth';
+import { isAdmin, isFullAdmin } from '../utils/auth';
 import Footer from '../components/Footer';
 
 const Users = () => {
@@ -89,7 +89,7 @@ const Users = () => {
   };
 
   const handleDelete = async (userId) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
 
     try {
       await axios.delete(`${API_BASE_URL}/api/users/${userId}`, {
@@ -181,6 +181,8 @@ const Users = () => {
     switch (roleName) {
       case 'Admin':
         return { bg: '#FEE2E2', color: '#991B1B' };
+      case 'Admin Demo':
+        return { bg: '#E0E7FF', color: '#3730A3' };
       case 'Manager':
         return { bg: '#FEF3C7', color: '#92400E' };
       case 'Cashier':
@@ -296,27 +298,29 @@ const Users = () => {
           </div>
         )}
 
-        {/* Add User Button */}
-        <div style={{ marginBottom: '20px' }}>
-          <button
-            onClick={() => openModal()}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#10B981',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#10B981'}
-          >
-            ➕ Add New User
-          </button>
-        </div>
+        {/* Add User Button - hidden for Admin Demo */}
+        {isFullAdmin() && (
+          <div style={{ marginBottom: '20px' }}>
+            <button
+              onClick={() => openModal()}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: '#10B981',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#059669'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#10B981'}
+            >
+              ➕ Add New User
+            </button>
+          </div>
+        )}
 
         {/* Users Table */}
         <div style={{
@@ -401,35 +405,39 @@ const Users = () => {
                           >
                             Edit
                           </button>
-                          <button
-                            onClick={() => openResetModal(user)}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#F59E0B',
-                              color: '#FFFFFF',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              marginRight: '8px'
-                            }}
-                          >
-                            Reset
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user.id)}
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#EF4444',
-                              color: '#FFFFFF',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Delete
-                          </button>
+                          {isFullAdmin() && (
+                            <button
+                              onClick={() => openResetModal(user)}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#F59E0B',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                marginRight: '8px'
+                              }}
+                            >
+                              Reset
+                            </button>
+                          )}
+                          {isFullAdmin() && (
+                            <button
+                              onClick={() => handleDelete(user.id)}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#EF4444',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -582,9 +590,11 @@ const Users = () => {
                     backgroundColor: '#FFFFFF'
                   }}
                 >
-                  {roles.map(role => (
-                    <option key={role.id} value={role.id}>{role.name}</option>
-                  ))}
+                  {roles
+                    .filter(role => isFullAdmin() || role.name !== 'Admin')
+                    .map(role => (
+                      <option key={role.id} value={role.id}>{role.name}</option>
+                    ))}
                 </select>
               </div>
 

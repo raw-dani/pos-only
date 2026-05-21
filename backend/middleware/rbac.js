@@ -7,6 +7,7 @@
 // Define role hierarchy (higher number = more permissions)
 const ROLE_LEVELS = {
   'Admin': 3,
+  'Admin Demo': 3,
   'Manager': 2,
   'Cashier': 1,
   'Viewer': 0
@@ -15,6 +16,15 @@ const ROLE_LEVELS = {
 // Define permissions for each role
 const ROLE_PERMISSIONS = {
   'Admin': [
+    'products:read', 'products:create', 'products:update', 'products:delete',
+    'categories:read', 'categories:create', 'categories:update', 'categories:delete',
+    'invoices:read', 'invoices:create', 'invoices:update', 'invoices:delete',
+    'reports:read', 'reports:export',
+    'users:read', 'users:create', 'users:update', 'users:delete',
+    'settings:read', 'settings:update',
+    'payment-methods:read', 'payment-methods:create', 'payment-methods:update', 'payment-methods:delete'
+  ],
+  'Admin Demo': [
     'products:read', 'products:create', 'products:update', 'products:delete',
     'categories:read', 'categories:create', 'categories:update', 'categories:delete',
     'invoices:read', 'invoices:create', 'invoices:update', 'invoices:delete',

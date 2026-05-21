@@ -120,7 +120,8 @@ const seedInitialData = async () => {
     const roles = await Role.bulkCreate([
       { name: 'Admin' },
       { name: 'Manager' },
-      { name: 'Cashier' }
+      { name: 'Cashier' },
+      { name: 'Admin Demo' }
     ]);
 
     // Use strong default passwords - buyer MUST change after first login
@@ -152,6 +153,15 @@ const seedInitialData = async () => {
       isActive: true
     });
 
+    await User.create({
+      username: 'admin-demo',
+      password: await bcrypt.hash('AdminDemo@12345!', 10),
+      name: 'Admin Demo',
+      email: 'admindemo@pos.com',
+      roleId: roles[3].id,
+      isActive: true
+    });
+
     const categories = await Category.bulkCreate([
       { name: 'Food & Beverage', description: 'Food and drinks items' },
       { name: 'Electronics', description: 'Electronic devices and accessories' },
@@ -178,6 +188,7 @@ const seedInitialData = async () => {
     console.log('   admin / Admin@12345!');
     console.log('   kasir / Kasir@12345!');
     console.log('   manager / Manager@12345!');
+    console.log('   admin-demo / AdminDemo@12345!');
   } catch (error) {
     console.error('Error seeding initial data:', error.message);
   }
@@ -621,6 +632,15 @@ app.post('/api/users', auth, rbac.requirePermission('users:create'), async (req,
   try {
     const { username, password, roleId, name, email } = req.body;
 
+    // Admin Demo cannot create Admin accounts
+    const userRole = req.user.role?.name;
+    if (userRole === 'Admin Demo') {
+      const targetRole = await Role.findByPk(roleId);
+      if (targetRole && targetRole.name === 'Admin') {
+        return res.status(403).json({ error: 'Admin Demo cannot create Admin accounts' });
+      }
+    }
+
     const existingUser = await User.findOne({ where: { username } });
     if (existingUser) {
       return res.status(400).json({ error: 'Username already exists' });
@@ -645,6 +665,15 @@ app.put('/api/users/:id', auth, rbac.requirePermission('users:update'), async (r
   try {
     const { id } = req.params;
     const updates = { ...req.body };
+
+    // Admin Demo cannot assign Admin role
+    const userRole = req.user.role?.name;
+    if (userRole === 'Admin Demo' && updates.roleId) {
+      const targetRole = await Role.findByPk(updates.roleId);
+      if (targetRole && targetRole.name === 'Admin') {
+        return res.status(403).json({ error: 'Admin Demo cannot assign Admin role' });
+      }
+    }
 
     const user = await User.findByPk(id);
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -671,6 +700,12 @@ app.delete('/api/users/:id', auth, rbac.requirePermission('users:delete'), async
   try {
     const { id } = req.params;
 
+    // Admin Demo cannot delete users
+    const userRole = req.user.role?.name;
+    if (userRole === 'Admin Demo') {
+      return res.status(403).json({ error: 'Admin Demo cannot delete users' });
+    }
+
     const user = await User.findByPk(id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -689,6 +724,12 @@ app.delete('/api/users/:id', auth, rbac.requirePermission('users:delete'), async
 // Reset password route
 app.put('/api/users/:id/reset-password', auth, rbac.requirePermission('users:update'), async (req, res) => {
   try {
+    // Admin Demo cannot reset passwords
+    const userRole = req.user.role?.name;
+    if (userRole === 'Admin Demo') {
+      return res.status(403).json({ error: 'Admin Demo cannot reset passwords' });
+    }
+
     const { id } = req.params;
     const { newPassword } = req.body;
     
@@ -729,7 +770,7 @@ app.get('/api/roles', auth, rbac.requirePermission('users:read'), async (req, re
     }
 
     // Ensure required roles exist
-    const requiredRoles = ['Admin', 'Manager', 'Cashier'];
+    const requiredRoles = ['Admin', 'Manager', 'Cashier', 'Admin Demo'];
     for (const roleName of requiredRoles) {
       const existing = await Role.findOne({ where: { name: roleName } });
       if (!existing) await Role.create({ name: roleName });

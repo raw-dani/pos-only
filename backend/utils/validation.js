@@ -15,8 +15,8 @@ const objectId = Joi.alternatives().try(
   'number.base': 'ID must be a valid number'
 });
 
-const username = Joi.string().alphanum().min(3).max(30).messages({
-  'string.alphanum': 'Username must only contain alphanumeric characters',
+const username = Joi.string().pattern(/^[a-zA-Z0-9_-]+$/).min(3).max(30).messages({
+  'string.pattern.base': 'Username must only contain letters, numbers, hyphens, and underscores',
   'string.min': 'Username must be at least 3 characters',
   'string.max': 'Username must not exceed 30 characters'
 });
